@@ -23,6 +23,8 @@ local axutils										= require("cp.ui.axutils")
 local just											= require("cp.just")
 local plist											= require("cp.plist")
 
+local insert, remove								= table.insert, table.remove
+
 --------------------------------------------------------------------------------
 --
 -- THE MODULE:
@@ -63,20 +65,65 @@ function MenuBar:new(app)
 	local o = {
 	  _app 			= app,
 	  _itemFinders	= {},
+	  _cache		= {},
 	}
-	setmetatable(o, self)
+
 	self.__index = self
+	setmetatable(o, self)
+
 	return o
 end
 
--- TODO: Add documentation
+--- cp.apple.finalcutpro.MenuBar:app() -> cp.apple.finalcutpro
+--- Method
+--- Returns the app instance the MenuBar is attached to.
+---
+--- Parameters:
+--- * None
+---
+--- Returns:
+--- * The app instance.
 function MenuBar:app()
 	return self._app
 end
 
--- TODO: Add documentation
+-- cp.apple.finalcutpro.MenuBar:_currentVersion() -> table
+-- Method
+-- Returns a table for caching results for the current app version.
+--
+-- Parameters:
+-- * None
+--
+-- Returns:
+-- * The cache table for the current version.
+function MenuBar:_currentVersion()
+	local version = self:app():getVersion()
+	local bundleID = self:app():bundleID()
+
+	if not bundleID or not version then
+		return nil
+	end
+
+	local id = bundleID .. ":" .. version
+	local versionCache = self._cache[id]
+	if not versionCache then
+		versionCache = {}
+		self._cache[id] = versionCache
+	end
+	return versionCache
+end
+
+--- cp.apple.finalcutpro.MenuBar:UI() -> axuielement
+--- Method
+--- Returns the UI element for the menu bar, if the app is running.
+---
+--- Parameters:
+--- * None
+---
+--- Returns:
+--- * The UI element if running, or `nil`.
 function MenuBar:UI()
-	return axutils.cache(self, "_ui", function()
+	return axutils.cache(self:_currentVersion(), "_ui", function()
 		local appUI = self:app():UI()
 		return appUI and axutils.childWith(appUI, "AXRole", MenuBar.ROLE)
 	end)
@@ -88,10 +135,11 @@ end
 
 -- TODO: Add documentation
 function MenuBar:getMainMenu()
-	if not MenuBar._mainMenu then
-		MenuBar._mainMenu = self:_loadMainMenu()
+	local cache = self:_currentVersion()
+	if not cache._mainMenu then
+		cache._mainMenu = self:_loadMainMenu()
 	end
-	return MenuBar._mainMenu
+	return cache._mainMenu
 end
 
 --- cp.apple.finalcutpro.MenuBar:selectMenu(path) -> boolean
@@ -237,7 +285,6 @@ function MenuBar:findMenuUI(path, language)
 		if type(step) == "number" then -- access it by index
 			menuItemUI = menuUI[step]
 			menuItemName = _translateTitle(menuMap, menuItemUI, appLang, language)
-			log.df("menuItemName = %s", menuItemName)
 		elseif type(step) == "function" then -- check each child against the function
 			for i,child in ipairs(menuUI) do
 				if step(child) then
@@ -284,7 +331,7 @@ function MenuBar:findMenuUI(path, language)
 				-- Assign the contained AXMenu to the menuUI - it contains the next set of AXMenuItems
 				menuUI = menuItemUI[1]
 			end
-			table.insert(currentPath, menuItemName)
+			insert(currentPath, menuItemName)
 		else
 			log.wf("Unable to find a menu called %s", inspect(step))
 			return nil
@@ -330,7 +377,7 @@ function MenuBar:visitMenuItems(visitFn, startPath)
 	local path = startPath or {}
 	if #path > 0 then
 		menu = self:findMenuUI(path)
-		table.remove(path)
+		remove(path)
 	else
 		menu = self:UI()
 	end
@@ -353,12 +400,12 @@ function MenuBar:_visitMenuItems(visitFn, path, menu)
 		local title = menu:attributeValue("AXTitle")
 		if #children == 1 then
 			-- add the title
-			table.insert(path, title)
+			insert(path, title)
 			-- log.df("_visitMenuItems: post insert: path = %s", hs.inspect(path))
 			self:_visitMenuItems(visitFn, path, children[1])
 			-- drop the extra title
 			-- log.df("_visitMenuItems: pre remove: path = %s", hs.inspect(path))
-			table.remove(path)
+			remove(path)
 			-- log.df("_visitMenuItems: post remove: path = %s", hs.inspect(path))
 		else
 			if title ~= nil and title ~= "" then

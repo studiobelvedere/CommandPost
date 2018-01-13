@@ -412,20 +412,11 @@ function App:getPasteboardUTI()
 end
 
 --- cp.apple.finalcutpro:UI() -> axuielement
---- Method
---- Returns the Final Cut Pro axuielement
----
---- Parameters:
----  * None
----
---- Returns:
----  * A axuielementObject of Final Cut Pro
-function App:UI()
-	return axutils.cache(self, "_ui", function()
-		local fcp = self:application()
-		return fcp and ax.applicationElement(fcp)
-	end)
-end
+--- Field
+--- The Final Cut Pro base axuielement for the whole application.
+App.UI = App.application:mutate(function(fcp, self)
+	return fcp and ax.applicationElement(fcp)
+end):bind(App)
 
 --- cp.apple.finalcutpro:launch() -> boolean
 --- Method
@@ -583,7 +574,7 @@ function App:getPath()
 		----------------------------------------------------------------------------------------
 		-- FINAL CUT PRO IS CURRENTLY CLOSED:
 		----------------------------------------------------------------------------------------
-		local result = application.pathForBundleID(App.BUNDLE_ID)
+		local result = application.pathForBundleID(App.BUNDLE_ID) or application.pathForBundleID(App.BUNDLE_ID_TRIAL)
 		if result then
 			return result
 		end
