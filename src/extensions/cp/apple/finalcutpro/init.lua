@@ -116,6 +116,8 @@ local windowfilter								= require("cp.apple.finalcutpro.windowfilter")
 
 local plugins									= require("cp.apple.finalcutpro.plugins")
 
+local len, format								= string.len, string.format
+
 --------------------------------------------------------------------------------
 --
 -- THE MODULE:
@@ -147,26 +149,6 @@ App.PASTEBOARD_UTI = "com.apple.flexo.proFFPasteboardUTI"
 --- Constant
 --- Final Cut Pro's Preferences Path
 App.PREFS_PATH = "~/Library/Preferences/"
-
---- cp.apple.finalcutpro.PREFS_PLIST_FILE
---- Constant
---- Final Cut Pro's Preferences File
-App.PREFS_PLIST_FILE = "com.apple.FinalCut.plist"
-
---- cp.apple.finalcutpro.PREFS_PLIST_FILE_TRIAL
---- Constant
---- Final Cut Pro's Preferences File for trial version
-App.PREFS_PLIST_FILE_TRIAL = "com.apple.FinalCutTrial.plist"
-
---- cp.apple.finalcutpro.PREFS_PLIST_PATH
---- Constant
---- Final Cut Pro's Preferences Path
-App.PREFS_PLIST_PATH = App.PREFS_PATH .. App.PREFS_PLIST_FILE
-
---- cp.apple.finalcutpro.PREFS_PLIST_PATH_TRIAL
---- Constant
---- Final Cut Pro's Preferences Path for trial version
-App.PREFS_PLIST_PATH = App.PREFS_PATH .. App.PREFS_PLIST_FILE_TRIAL
 
 --- cp.apple.finalcutpro.SUPPORTED_LANGUAGES
 --- Constant
@@ -216,6 +198,7 @@ function App:init()
 	self.application:update()
 	return self
 end
+
 
 --- cp.apple.finalcutpro:reset() -> none
 --- Function
@@ -300,8 +283,30 @@ function App:keysWithString(string, lang)
 	return self._strings and self._strings:findKeys(lang, string)
 end
 
+-- findApp(app, bundleId) -> application
+-- Function
+-- Returns the `app` if it exists, or finds an app with the specified bundle ID if possible.
+--
+-- Parameters:
+-- * app		- The application, which if existing, will be returned.
+-- * bundleId	- The Application Bundle ID which will be used to find an application if app is not found.
+--
+-- Returns:
+-- * The application, or `nil` if none is found.
+local function findApp(app, bundleId)
+	if not app or app:bundleID() == nil or not app:isRunning() then
+		app = nil
+		local result = application.applicationsForBundleID(bundleId)
+		if result and #result > 0 then
+			-- select the first result found
+			app = result[1]
+		end
+	end
+	return app
+end
+
 --- cp.apple.finalcutpro:application() -> hs.application
---- Method
+--- Field
 --- Returns the running `hs.application` for Final Cut Pro.
 ---
 --- Parameters:
@@ -310,27 +315,66 @@ end
 --- Returns:
 ---  * The hs.application, or `nil` if the application is not running.
 App.application = prop.new(function(self)
-	local app = self._application
-	local appstorefcpx = application.applicationsForBundleID(App.BUNDLE_ID)
-	local trialfcpx = application.applicationsForBundleID(App.BUNDLE_ID_TRIAL)
-	if (not app or app:bundleID() == nil or not app:isRunning()) and appstorefcpx and #appstorefcpx > 0 then
-		local result = application.applicationsForBundleID(App.BUNDLE_ID)
-		if result and #result > 0 then
-			app = result[1] -- If there is at least one copy running, return the first one
-		else
-			app = nil
-		end
-		self._application = app
-	elseif trialfcpx and #trialfcpx > 0 then
-		local result = application.applicationsForBundleID(App.BUNDLE_ID_TRIAL)
-		if result and #result > 0 then
-			app = result[1] -- If there is at least one copy running, return the first one
-		else
-			app = nil
-		end
-		self._application = app
+	self._fullApp = findApp(self._fullApp, App.BUNDLE_ID)
+	self._trialApp = findApp(self._trialApp, App.BUNDLE_ID_TRIAL)
+
+	if self._fullApp == nil or self._trialApp and self._trialApp:isFrontmost() then
+		return self._trialApp
+	else
+		return self._fullApp
 	end
-	return app
+end):bind(App)
+
+--- cp.apple.finalcutpro:bundleID <cp.prop: string; read-only>
+--- Field
+--- A cp.prop containing the Bundle ID for the Final Cut Pro app currently running.
+--- This could be the full FCPX app or the Trial app. If both are running, then
+--- if the Trial is the front-most app, it will be returned, otherwise the main FCPX bundle
+--- is returned. If neither are running, then the ID for the main FCPX app is returned if it
+--- is installed, then the Trial (if installed), or `nil` if none is installed.
+App.bundleID = prop.new(function(self)
+	local app = self:application()
+	if app then
+		return app:bundleID()
+	else
+		local fullApp = application.nameForBundleID(App.BUNDLE_ID)
+		if fullApp then
+			return App.BUNDLE_ID
+		else
+			local trialApp = application.nameForBundleID(App.BUNDLE_ID_TRIAL)
+			if trialApp ~= nil then
+				return App.BUNDLE_ID_TRIAL
+			end
+		end
+	end
+	return nil
+end):bind(App):monitor(App.application)
+
+--- cp.apple.finalcutpro:name <cp.prop: string; read-only>
+--- Field
+--- The name of the app, or `nil` if FCPX is not installed.
+App.name = App.bundleID:mutate(function(bundleID, self)
+	return bundleID and application.nameForBundleID(bundleID) or nil
+end):bind(App)
+
+--- cp.apple.finalcutpro:preferencesFile <cp.prop: string>
+--- Field
+--- The name of the preferences file for the current app, or `nil` if none is installed.
+---
+--- Notes:
+--- * This only returns the file name. See `preferencesPath` for the full path.
+App.preferencesFile = App.bundleID:mutate(function(value, self)
+	return value and value .. ".plist" or nil
+end):bind(App)
+
+--- cp.apple.finalcutpro:preferencesFile <cp.prop: string>
+--- Field
+--- The full path to preferences file for the current app, or `nil` if none is installed.
+---
+--- Notes:
+--- * This returns the full path. See `preferencesFile` to get the file name only.
+App.preferencesPath = App.preferencesFile:mutate(function(filename, self)
+	return filename and App.PREFS_PATH .. filename or nil
 end):bind(App)
 
 --- cp.apple.finalcutpro.isRunning <cp.prop: boolean; read-only>
@@ -400,6 +444,9 @@ function App:launch()
 	if fcpx == nil then
 		-- Final Cut Pro is Closed:
 		result = application.launchOrFocusByBundleID(App.BUNDLE_ID)
+		if not result then -- try FCP Trial
+			result = application.launchOrFocusByBundleID(App.BUNDLE_ID_TRIAL)
+		end
 	else
 		-- Final Cut Pro is Open:
 		if not fcpx:isFrontmost() then
@@ -624,7 +671,7 @@ App.isInstalled = App.getVersion:mutate(function(version) return version ~= nil 
 ---
 --- Note:
 ---  * Supported version refers to any version of Final Cut Pro equal or higher to cp.apple.finalcutpro.EARLIEST_SUPPORTED_VERSION
-App.isUnsupported = App.isInstalled:AND(App.isSupported:NOT())
+App.isUnsupported = App.isInstalled:AND(App.isSupported:NOT()):bind(App)
 
 --- cp.apple.finalcutpro:isFrontmost <cp.prop: boolean; read-only>
 --- Field
@@ -690,6 +737,19 @@ end
 ----------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------
 
+function _prepareMenuPath(path, appName)
+	local newPath = {}
+	for _,step in ipairs(path) do
+		if step == MenuBar.APP_MENU then
+			step = appName
+		elseif step == MenuBar.APPLE_MENU then
+			step = MenuBar.APPLE_MENU_NAME
+		end
+		table.insert(newPath, step)
+	end
+	return newPath
+end
+
 --- cp.apple.finalcutpro:menuBar() -> menuBar object
 --- Method
 --- Returns the Final Cut Pro Menu Bar
@@ -720,8 +780,8 @@ function App:menuBar()
 		-- Add a finder for missing menus:
 		----------------------------------------------------------------------------------------
 		local missingMenuMap = {
-			{ path = {"Final Cut Pro"},					child = "Commands",		key = "CommandSubmenu" },
-			{ path = {"Final Cut Pro", "Commands"},		child = "Customize…",	key = "Customize" },
+			{ path = {MenuBar.APP_MENU},				child = "Commands",		key = "CommandSubmenu" },
+			{ path = {MenuBar.APP_MENU, "Commands"},	child = "Customize…",	key = "Customize" },
 			{ path = {"Clip"},							child = "Open Clip",	key = "FFOpenInTimeline" },
 			{ path = {"Window", "Show in Workspace"},	child = "Sidebar",		key = "PEEventsLibrary" },
 			{ path = {"Window", "Show in Workspace"},	child = "Timeline",		key = "PETimeline" },
@@ -729,7 +789,8 @@ function App:menuBar()
 
 		menuBar:addMenuFinder(function(parentItem, path, childName, language)
 			for i,item in ipairs(missingMenuMap) do
-				if _.isEqual(path, item.path) and childName == item.child then
+				local missingPath = _prepareMenuPath(item.path, self:name())
+				if _.isEqual(path, missingPath) and childName == item.child then
 					return axutils.childWith(parentItem, "AXTitle", self:string(item.key))
 				end
 			end
@@ -1084,16 +1145,44 @@ end
 --- Returns:
 ---  * A table with all of Final Cut Pro's preferences, or nil if an error occurred
 function App:getPreferences(forceReload)
-	local modified = fs.attributes(App.PREFS_PLIST_PATH, "modification")
-	if forceReload or modified ~= self._preferencesModified then
+	local bundleID = self:bundleID()
+	if bundleID == nil then -- not installed
+		return nil
+	end
+
+	local prefsPath = self:preferencesPath()
+	local prefsFile = self:preferencesFile()
+
+	-- init preferences cache
+	local prefs = self._preferences or {}
+	self._preferences = prefs
+
+	local modified = fs.attributes(prefsPath, "modification")
+	if forceReload or modified ~= prefs[bundleID..":modification"] then
 		-- log.df("Reloading Final Cut Pro Preferences: %s; %s", self._preferencesModified, modified)
 		-- NOTE: https://macmule.com/2014/02/07/mavericks-preference-caching/
-		hs.execute([[/usr/bin/python -c 'import CoreFoundation; CoreFoundation.CFPreferencesAppSynchronize("com.apple.FinalCut")']])
+		hs.execute([[/usr/bin/python -c 'import CoreFoundation; CoreFoundation.CFPreferencesAppSynchronize("]] .. bundleID .. [[")']])
 
-		self._preferences = plist.binaryFileToTable(App.PREFS_PLIST_PATH) or nil
-		self._preferencesModified = fs.attributes(App.PREFS_PLIST_PATH, "modification")
+		prefs[bundleID] = plist.binaryFileToTable(prefsPath) or nil
+		prefs[bundleID..":modification"] = fs.attributes(prefsPath, "modification")
+
+		-- Setup Preferences Watcher:
+		--log.df("Setting up Preferences Watcher...")
+		local watcher = prefs[bundleID..":watcher"]
+		if not watcher then
+			local watcher = pathwatcher.new(App.PREFS_PATH, function(files)
+				local fileLength = len(prefsFile)*-1
+				for _,file in pairs(files) do
+					if self._watchers and file:sub(fileLength) == prefsFile then
+						self._watchers:notify("preferences")
+						return
+					end
+				end
+			end):start()
+			prefs[bundleID..":watcher"] = watcher
+		end
 	 end
-	return self._preferences
+	return self._preferences[bundleID]
 end
 
 --- cp.apple.finalcutpro:getPreference(value, [default], [forceReload]) -> string or nil
@@ -1132,11 +1221,17 @@ end
 --- Returns:
 ---  * True if executed successfully otherwise False
 function App:setPreference(key, value)
+	local path = self:preferencesPath()
+	if path == nil then
+		log.wf("Attempted to set a preference for FCP without FCP being installed.")
+		return false
+	end
+
 	local executeStatus
 	local preferenceType = nil
 
 	if value == nil then
-		local executeString = "defaults delete " .. App.PREFS_PLIST_PATH .. " '" .. key .. "'"
+		local executeString = "defaults delete " .. path .. " '" .. key .. "'"
 		local _, executeStatus = hs.execute(executeString)
 		return executeStatus ~= nil
 	end
@@ -1165,7 +1260,7 @@ function App:setPreference(key, value)
 	end
 
 	if preferenceType then
-		local executeString = "defaults write " .. App.PREFS_PLIST_PATH .. " '" .. key .. "' -" .. preferenceType .. " " .. value
+		local executeString = "defaults write " .. path .. " '" .. key .. "' -" .. preferenceType .. " " .. value
 		local _, executeStatus = hs.execute(executeString)
 		return executeStatus ~= nil
 	end
@@ -1598,6 +1693,11 @@ function App:unwatch(id)
 	return self._watchers:unwatch(id)
 end
 
+function matchesApp(bundleID, appName)
+	return bundleID == App.BUNDLE_ID or bundleID == App.BUNDLE_ID_TRIAL or
+		bundleID == nil and (appName == "Final Cut Pro" or appName == "Final Cut Pro Trial")
+end
+
 -- cp.apple.finalcutpro:_initWatchers() -> none
 -- Method
 -- Initialise all the various Final Cut Pro Watchers.
@@ -1622,7 +1722,7 @@ function App:_initWatchers()
 		function(appName, eventType, application)
 			local bundleID = application:bundleID()
 			-- log.df("Application event: bundleID: %s; appName: '%s'; type: %s", bundleID, appName, eventType)
-			if (bundleID == App.BUNDLE_ID or bundleID == nil and appName == "Final Cut Pro") then
+			if matchesApp(bundleID, appName) then
 				if eventType == applicationwatcher.activated then
 					timer.doAfter(0.01, function()
 						self.isShowing:update()
@@ -1664,19 +1764,6 @@ function App:_initWatchers()
 	windowfilter:subscribe("windowVisible", function()
 		App.isModalDialogOpen:update()
 	end)
-
-	--------------------------------------------------------------------------------
-	-- Setup Preferences Watcher:
-	--------------------------------------------------------------------------------
-	--log.df("Setting up Preferences Watcher...")
-	self._preferencesWatcher = pathwatcher.new(App.PREFS_PATH, function(files)
-		for _,file in pairs(files) do
-			if file:sub(string.len(App.PREFS_PLIST_FILE)*-1) == App.PREFS_PLIST_FILE then
-				self._watchers:notify("preferences")
-				return
-			end
-		end
-	end):start()
 end
 
 --------------------------------------------------------------------------------
@@ -1690,7 +1777,7 @@ function App:_listWindows()
 	self:show()
 	local windows = self:windowsUI()
 	for i,w in ipairs(windows) do
-		log.df(string.format("%7d", i)..": "..self:_describeWindow(w))
+		log.df(format("%7d", i)..": "..self:_describeWindow(w))
 	end
 
 	log.df("")

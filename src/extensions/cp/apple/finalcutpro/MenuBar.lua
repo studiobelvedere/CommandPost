@@ -16,6 +16,7 @@
 local log											= require("hs.logger").new("menubar")
 
 local fnutils										= require("hs.fnutils")
+local inspect										= require("hs.inspect")
 
 local archiver										= require("cp.plist.archiver")
 local axutils										= require("cp.ui.axutils")
@@ -30,6 +31,23 @@ local plist											= require("cp.plist")
 local MenuBar = {}
 
 MenuBar.ROLE										= "AXMenuBar"
+
+--- cp.apple.finalcutpro.MenuBar.APPLE_MENU
+--- Constant
+--- Contains the token used to indicate the 'Apple' menu in a menu path.
+--- This should be used in menu paths.
+MenuBar.APPLE_MENU									= 1
+
+--- cp.apple.finalcutpro.MenuBar.APPLE_MENU_NAME
+--- Constant
+--- Contains the default label for the "Apple" menu.
+MenuBar.APPLE_MENU_NAME								= "Apple"
+
+--- cp.apple.finalcutpro.MenuBar.APP_MENU
+--- Constant
+--- Contains the token used to indicate the 'App' menu in a menu path. (eg. 'Final Cut Pro')
+--- This should be used in menu paths involving the 'App' menu.
+MenuBar.APP_MENU									= 2
 
 --- cp.apple.finalcutpro.MenuBar:new(App) -> MenuBar
 --- Function
@@ -169,18 +187,19 @@ end
 
 -- Looks through the `menuMap` to find a matching title in the source language,
 -- and returns the equivalent in the target language, or the original title if it can't be found.
-local function _translateTitle(menuMap, title, sourceLanguage, targetLanguage)
+local function _translateTitle(menuMap, menuItem, sourceLanguage, targetLanguage)
+	local menuTitle = menuItem:attributeValue("AXTitle")
 	if menuMap then
 		for _,item in ipairs(menuMap) do
-			if menuMap[sourceLanguage] == title then
+			if menuMap[sourceLanguage] == menuTitle then
 				return menuMap[targetLanguage]
 			end
 		end
 	end
-	return title
+	return menuTitle
 end
 
---- cp.apple.finalcutpro.MenuBar:findMenuUI(path) -> Menu UI
+--- cp.apple.finalcutpro.MenuBar:findMenuUI(path[, language]) -> Menu UI
 --- Method
 --- Finds a specific Menu UI element for the provided path.
 --- E.g. `findMenuUI({"Edit", "Copy"})` returns the 'Copy' menu item in the 'Edit' menu.
@@ -192,7 +211,7 @@ end
 ---
 --- Parameters:
 ---  * `path`		- The path list to search for.
----  * `language`	- The language code the path is in. E.g. "en" or "fr". Defaults to the
+---  * `language`	- The language code the path is in. E.g. "en" or "fr". Defaults to "en"
 ---
 --- Returns:
 ---  * The Menu UI, or `nil` if it could not be found.
@@ -218,6 +237,7 @@ function MenuBar:findMenuUI(path, language)
 		if type(step) == "number" then -- access it by index
 			menuItemUI = menuUI[step]
 			menuItemName = _translateTitle(menuMap, menuItemUI, appLang, language)
+			log.df("menuItemName = %s", menuItemName)
 		elseif type(step) == "function" then -- check each child against the function
 			for i,child in ipairs(menuUI) do
 				if step(child) then
@@ -266,7 +286,7 @@ function MenuBar:findMenuUI(path, language)
 			end
 			table.insert(currentPath, menuItemName)
 		else
-			log.wf("Unable to find a menu called '%s'", step)
+			log.wf("Unable to find a menu called %s", inspect(step))
 			return nil
 		end
 	end
