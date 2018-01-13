@@ -1278,13 +1278,13 @@ end
 ---  * A boolean value indicating whether the AppleScript succeeded or not
 function App:importXML(path)
 	if self:isRunning() then
-		local appleScript = [[
+		local appleScript = format([[
 			set whichSharedXMLPath to "]] .. path .. [["
-			tell application "Final Cut Pro"
+			tell application "%s"
 				activate
 				open POSIX file whichSharedXMLPath as string
 			end tell
-		]]
+		]], self:name())
 		local bool, _, _ = osascript.applescript(appleScript)
 		return bool
 	end
