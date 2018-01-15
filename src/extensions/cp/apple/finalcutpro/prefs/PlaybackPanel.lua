@@ -32,9 +32,29 @@ local PlaybackPanel = {}
 
 -- TODO: Add documentation
 function PlaybackPanel:new(preferencesDialog)
-	local o = {_parent = preferencesDialog}
-	
-	return prop.extend(o, PlaybackPanel)
+	local parent = preferencesDialog
+	local o = {_parent = parent}
+	prop.extend(o, PlaybackPanel)
+
+-- TODO: Add documentation
+	o.UI = parent.toolbarUI:mutate(function(ui, self)
+		return axutils.childFromLeft(ui, id "ID")
+	end):bind(o)
+
+-- TODO: Add documentation
+	o.showing = parent.toolbarUI:mutate(function(toolbar, self)
+		if toolbar then
+			local selected = toolbar:selectedChildren()
+			return #selected == 1 and selected[1] == self:UI()
+		end
+		return false
+	end):bind(o)
+
+	o.contentsUI = parent.groupUI:mutate(function(ui, self)
+		return o.showing() and ui or nil
+	end):bind(o):monitor(o.showing)
+
+	return o
 end
 
 -- TODO: Add documentation
@@ -43,43 +63,23 @@ function PlaybackPanel:parent()
 end
 
 -- TODO: Add documentation
-function PlaybackPanel:UI()
-	return axutils.cache(self, "_ui", function()
-		return axutils.childFromLeft(self:parent():toolbarUI(), id "ID")
-	end)
-end
-
--- TODO: Add documentation
-PlaybackPanel.isShowing = prop.new(function(self)
-	local toolbar = self:parent():toolbarUI()
-	if toolbar then
-		local selected = toolbar:selectedChildren()
-		return #selected == 1 and selected[1] == self:UI()
-	end
-	return false
-end):bind(PlaybackPanel)
-
-function PlaybackPanel:contentsUI()
-	return self:isShowing() and self:parent():groupUI() or nil
-end
-
--- TODO: Add documentation
 function PlaybackPanel:show()
 	local parent = self:parent()
 	-- show the parent.
-	if parent:show():isShowing() then
+	if parent:show():showing() then
 		-- get the toolbar UI
 		local panel = just.doUntil(function() return self:UI() end)
 		if panel then
 			panel:doPress()
-			just.doUntil(function() return self:isShowing() end)
+			just.doUntil(function() return self:showing() end)
 		end
 	end
 	return self
 end
 
 function PlaybackPanel:hide()
-	return self:parent():hide()
+	self:parent():hide()
+	return self
 end
 
 function PlaybackPanel:createMulticamOptimizedMedia()

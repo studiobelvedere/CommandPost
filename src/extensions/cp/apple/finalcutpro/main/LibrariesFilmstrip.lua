@@ -40,7 +40,32 @@ end
 -- TODO: Add documentation
 function Filmstrip:new(parent)
 	local o = {_parent = parent}
-	return prop.extend(o, Filmstrip)
+	prop.extend(o, Filmstrip)
+
+	o.UI = parent.mainGroupUI:mutate(function(main, self)
+		if main then
+			for _,child in ipairs(main) do
+				if child:attributeValue("AXRole") == "AXGroup" and #child == 1 then
+					if Filmstrip.matches(child[1]) then
+						return child[1]
+					end
+				end
+			end
+		end
+		return nil
+	end):bind(o)
+
+-- TODO: Add documentation
+	o.verticalScrollBarUI = o.UI:mutate(function(ui, self)
+		return ui and ui:attributeValue("AXVerticalScrollBar")
+	end):bind(o)
+
+-- TODO: Add documentation
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil and parent:showing()
+	end):bind(o):monitor(parent.showing)
+
+	return o
 end
 
 -- TODO: Add documentation
@@ -59,37 +84,8 @@ end
 --
 -----------------------------------------------------------------------
 
--- TODO: Add documentation
-function Filmstrip:UI()
-	return axutils.cache(self, "_ui", function()
-		local main = self:parent():mainGroupUI()
-		if main then
-			for i,child in ipairs(main) do
-				if child:attributeValue("AXRole") == "AXGroup" and #child == 1 then
-					if Filmstrip.matches(child[1]) then
-						return child[1]
-					end
-				end
-			end
-		end
-		return nil
-	end,
-	Filmstrip.matches)
-end
-
--- TODO: Add documentation
-function Filmstrip:verticalScrollBarUI()
-	local ui = self:UI()
-	return ui and ui:attributeValue("AXVerticalScrollBar")
-end
-
--- TODO: Add documentation
-Filmstrip.isShowing = prop.new(function(self)
-	return self:UI() ~= nil and self:parent():isShowing()
-end):bind(Filmstrip)
-
 function Filmstrip:show()
-	if not self:isShowing() and self:parent():show():isShowing() then
+	if not self:showing() and self:parent():show():showing() then
 		self:parent():toggleViewMode():press()
 	end
 end

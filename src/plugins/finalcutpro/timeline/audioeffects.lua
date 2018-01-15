@@ -86,7 +86,7 @@ function mod.apply(action)
 	-- Get Effects Browser:
 	--------------------------------------------------------------------------------
 	local effects = fcp:effects()
-	local effectsShowing = effects:isShowing()
+	local effectsShowing = effects:showing()
 	local effectsLayout = effects:saveLayout()
 
 	--------------------------------------------------------------------------------

@@ -43,7 +43,21 @@ end
 -- TODO: Add documentation
 function MediaImport:new(app)
 	local o = {_app = app}
-	return prop.extend(o, MediaImport)
+	prop.extend(o, MediaImport)
+
+	o.UI = app.windowsUI:mutate(function(windowsUI, self)
+		return windowsUI and self._findWindowUI(windowsUI)
+	end):bind(o)
+
+--- cp.apple.finalcutpro.import.MediaImport.showing <cp.prop: boolean; read-only>
+--- Field
+--- Is the Media Import window showing?
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil
+	end):bind(o)
+	o.isShowing = o.showing
+
+	return o
 end
 
 -- TODO: Add documentation
@@ -52,37 +66,21 @@ function MediaImport:app()
 end
 
 -- TODO: Add documentation
-function MediaImport:UI()
-	return axutils.cache(self, "_ui", function()
-		local windowsUI = self:app():windowsUI()
-		return windowsUI and self:_findWindowUI(windowsUI)
-	end,
-	MediaImport.matches)
-end
-
--- TODO: Add documentation
-function MediaImport:_findWindowUI(windows)
+function MediaImport._findWindowUI(windows)
 	for i,window in ipairs(windows) do
 		if MediaImport.matches(window) then return window end
 	end
 	return nil
 end
 
---- cp.apple.finalcutpro.import.MediaImport.isShowing <cp.prop: boolean; read-only>
---- Field
---- Is the Media Import window showing?
-MediaImport.isShowing = prop.new(function(self)
-	return self:UI() ~= nil
-end):bind(MediaImport)
-
 -- TODO: Add documentation
 -- Ensures the MediaImport is showing
 function MediaImport:show()
-	if not self:isShowing() then
+	if not self:showing() then
 		-- open the window
 		if self:app():menuBar():isEnabled({"File", "Import", "Media…"}) then
 			self:app():menuBar():selectMenu({"File", "Import", "Media…"})
-			local ui = just.doUntil(function() return self:isShowing() end)
+			local ui = just.doUntil(function() return self:showing() end)
 		end
 	end
 	return self
@@ -140,7 +138,7 @@ function MediaImport:watch(events)
 		self._watcher = WindowWatcher:new(self)
 	end
 
-	self._watcher:watch(events)
+	return self._watcher:watch(events)
 end
 
 function MediaImport:unwatch(id)

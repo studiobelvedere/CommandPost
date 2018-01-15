@@ -14,6 +14,7 @@
 --
 --------------------------------------------------------------------------------
 local axutils						= require("cp.ui.axutils")
+local prop							= require("cp.prop")
 
 --------------------------------------------------------------------------------
 --
@@ -33,8 +34,18 @@ end
 -- TODO: Add documentation
 function Alert:new(parent)
 	local o = {_parent = parent}
-	setmetatable(o, self)
-	self.__index = self
+	prop.extend(o, Alert)
+
+	-- TODO: Add documentation
+	o.UI = parent.UI:mutate(function(ui, self)
+		axutils.childMatching(ui, Alert.matches)
+	end):bind(o)
+
+-- TODO: Add documentation
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil
+	end):bind(o)
+
 	return o
 end
 
@@ -46,19 +57,6 @@ end
 -- TODO: Add documentation
 function Alert:app()
 	return self:parent():app()
-end
-
--- TODO: Add documentation
-function Alert:UI()
-	return axutils.cache(self, "_ui", function()
-		axutils.childMatching(self:parent():UI(), Alert.matches)
-	end,
-	Alert.matches)
-end
-
--- TODO: Add documentation
-function Alert:isShowing()
-	return self:UI() ~= nil
 end
 
 -- TODO: Add documentation

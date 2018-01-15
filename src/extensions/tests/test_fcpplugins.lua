@@ -5,14 +5,18 @@ local inspect			= require("hs.inspect")
 local bench				= require("cp.bench")
 
 local config			= require("cp.config")
-local plugins		= require("cp.apple.finalcutpro.plugins")
+local plugins			= require("cp.apple.finalcutpro.plugins")
+local prop				= require("cp.prop")
 
 local PLUGINS_PATH = config.scriptPath .. "/tests/fcp/plugins"
 local EFFECTS_PATH = PLUGINS_PATH .. "/Effects.localized"
 
 local app = {
-	getPath = function() return "/Applications/Final Cut Pro.app" end
+	version = "10.4",
 }
+
+function app.getPath() return "/Applications/Final Cut Pro.app" end
+app.getVersion = prop(function() return app.version end):bind(app)
 
 return test.suite("cp.apple.finalcutpro.plugins"):with(
 

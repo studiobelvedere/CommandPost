@@ -49,7 +49,7 @@ function mod.scanFinalCutPro()
 
 		local didFinalCutProLoad = just.doUntil(function()
 			--log.d("Checking if Final Cut Pro has loaded.")
-			return fcp:primaryWindow():isShowing()
+			return fcp:primaryWindow():showing()
 		end, 10, 1)
 
 		if not didFinalCutProLoad then

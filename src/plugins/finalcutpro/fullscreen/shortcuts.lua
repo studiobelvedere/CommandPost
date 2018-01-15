@@ -49,7 +49,7 @@ local mod = {}
 --- Returns:
 ---  * None
 function mod.update()
-	if mod.enabled() and fcp:fullScreenWindow():isShowing() then
+	if mod.enabled() and fcp:fullScreenWindow():showing() then
 		--log.df("Watching for fullscreen shortcuts")
 		if mod.keyUpWatcher then
 			mod.keyUpWatcher:start()
@@ -145,7 +145,7 @@ function mod.checkCommand(whichModifier, whichKey)
 	--------------------------------------------------------------------------------
 	-- Only Continue if in Full Screen Playback Mode:
 	--------------------------------------------------------------------------------
-	if fcp:fullScreenWindow():isShowing() then
+	if fcp:fullScreenWindow():showing() then
 
 		--------------------------------------------------------------------------------
 		-- Get Active Command Set:

@@ -14,6 +14,7 @@
 --
 --------------------------------------------------------------------------------
 local axutils						= require("cp.ui.axutils")
+local prop							= require("cp.prop")
 
 --------------------------------------------------------------------------------
 --
@@ -32,22 +33,49 @@ end
 --- Creates a new PopUpButton
 function PopUpButton:new(parent, finderFn)
 	local o = {_parent = parent, _finder = finderFn}
-	setmetatable(o, self)
-	self.__index = self
+	prop.extend(o, PopUpButton)
+
+-- TODO: Add documentation
+	o.UI = prop(function(self)
+		local ui = self._finder()
+		return axutils.isValid(ui) and PopUpButton.matches(ui) and ui or nil
+	end):bind(o)
+
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil
+	end):bind(o)
+
+-- TODO: Add documentation
+	o.enabled = o.UI:mutate(function(ui, self)
+		return ui and ui:enabled()
+	end):bind(o)
+	o.isEnabled = o.enabled
+
+	o.value = o.UI:mutate(
+		function(ui, self)
+			return ui and ui:value()
+		end,
+		function(ui, value, self)
+			if ui and not ui:value() == value then
+				local items = ui:doPress()[1]
+				for i,item in items do
+					if item:title() == value then
+						item:doPress()
+						return
+					end
+				end
+				items:doCancel()
+			end
+			return self
+		end
+	):bind(o)
+
 	return o
 end
 
 -- TODO: Add documentation
 function PopUpButton:parent()
 	return self._parent
-end
-
--- TODO: Add documentation
-function PopUpButton:UI()
-	return axutils.cache(self, "_ui", function()
-		return self._finder()
-	end,
-	PopUpButton.matches)
 end
 
 -- TODO: Add documentation
@@ -71,30 +99,12 @@ end
 
 -- TODO: Add documentation
 function PopUpButton:getValue()
-	local ui = self:UI()
-	return ui and ui:value()
+	return self:value()
 end
 
 -- TODO: Add documentation
 function PopUpButton:setValue(value)
-	local ui = self:UI()
-	if ui and not ui:value() == value then
-		local items = ui:doPress()[1]
-		for i,item in items do
-			if item:title() == value then
-				item:doPress()
-				return
-			end
-		end
-		items:doCancel()
-	end
-	return self
-end
-
--- TODO: Add documentation
-function PopUpButton:isEnabled()
-	local ui = self:UI()
-	return ui and ui:enabled()
+	return self.value:set(value)
 end
 
 -- TODO: Add documentation

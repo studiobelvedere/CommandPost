@@ -40,7 +40,72 @@ function FullScreenWindow:new(app)
 	local o = {
 		_app = app
 	}
-	return prop.extend(o, FullScreenWindow)
+	prop.extend(o, FullScreenWindow)
+
+-- TODO: Add documentation
+	o.UI = app.UI:mutate(function(ui, self)
+		if ui then
+			if FullScreenWindow.matches(ui:attributeValue("AXMainWindow")) then
+				return ui:mainWindow()
+			else
+				local windowsUI = self:app():windowsUI()
+				return windowsUI and self._findWindowUI(windowsUI)
+			end
+		end
+		return nil
+	end):bind(o)
+
+-- TODO: Add documentation
+-- The top AXSplitGroup contains the
+	o.rootGroupUI = o.UI:mutate(function(ui, self)
+		return ui and axutils.childWithRole(ui, "AXSplitGroup")
+	end):bind(o)
+
+-- TODO: Add documentation
+	o.viewerGroupUI = o.rootGroupUI:mutate(function(ui, self)
+		if ui then
+			local group = nil
+			if #ui == 1 then
+				group = ui[1]
+			else
+				group = axutils.childMatching(ui, function(element) return #element == 2 end)
+			end
+			if #group == 2 and axutils.childWithRole(group, "AXImage") ~= nil then
+				return group
+			end
+		end
+		return nil
+	end):bind(o)
+
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil
+	end):bind(o)
+	o.isShowing = o.showing
+
+-- TODO: Add documentation
+	o.fullScreen = o.rootGroupUI:mutate(
+		function(ui, self)
+			if ui then
+				-- In full-screen, it can either be a single group, or a sub-group containing the event viewer.
+				local group = nil
+				if #ui == 1 then
+					group = ui[1]
+				else
+					group = axutils.childMatching(ui, function(element) return #element == 2 end)
+				end
+				if #group == 2 then
+					local image = axutils.childWithRole(group, "AXImage")
+					return image ~= nil
+				end
+			end
+			return false
+		end,
+		function(ui, newValue, self)
+			if ui then ui:setFullScreen(newValue) end
+		end
+	):bind(o)
+
+	return o
 end
 
 -- TODO: Add documentation
@@ -55,102 +120,9 @@ function FullScreenWindow:show()
 end
 
 -- TODO: Add documentation
-function FullScreenWindow:UI()
-	return axutils.cache(self, "_ui", function()
-		local ui = self:app():UI()
-		if ui then
-			if FullScreenWindow.matches(ui:mainWindow()) then
-				return ui:mainWindow()
-			else
-				local windowsUI = self:app():windowsUI()
-				return windowsUI and self:_findWindowUI(windowsUI)
-			end
-		end
-		return nil
-	end,
-	FullScreenWindow.matches)
-end
-
--- TODO: Add documentation
-FullScreenWindow.isShowing = prop.new(function(self)
-	return self:UI() ~= nil
-end):bind(FullScreenWindow)
-
--- TODO: Add documentation
-FullScreenWindow.isFullScreen = prop.new(function(self)
-	local ui = self:rootGroupUI()
-	if ui then
-		-- In full-screen, it can either be a single group, or a sub-group containing the event viewer.
-		local group = nil
-		if #ui == 1 then
-			group = ui[1]
-		else
-			group = axutils.childMatching(ui, function(element) return #element == 2 end)
-		end
-		if #group == 2 then
-			local image = axutils.childWithRole(group, "AXImage")
-			return image ~= nil
-		end
-	end
-	return false
-end):bind(FullScreenWindow)
-
--- TODO: Add documentation
-function FullScreenWindow:_findWindowUI(windows)
+function FullScreenWindow._findWindowUI(windows)
 	for i,w in ipairs(windows) do
 		if FullScreenWindow.matches(w) then return w end
-	end
-	return nil
-end
-
--- TODO: Add documentation
-function FullScreenWindow:setFullScreen(isFullScreen)
-	local ui = self:UI()
-	if ui then ui:setFullScreen(isFullScreen) end
-	return self
-end
-
--- TODO: Add documentation
-function FullScreenWindow:toggleFullScreen()
-	local ui = self:UI()
-	if ui then ui:setFullScreen(not self:isFullScreen()) end
-	return self
-end
-
------------------------------------------------------------------------
---
--- UI STRUCTURE:
---
------------------------------------------------------------------------
-
--- TODO: Add documentation
--- The top AXSplitGroup contains the
-function FullScreenWindow:rootGroupUI()
-	return axutils.cache(self, "_rootGroup", function()
-		local ui = self:UI()
-		return ui and axutils.childWithRole(ui, "AXSplitGroup")
-	end)
-end
-
------------------------------------------------------------------------
---
--- VIEWER UI:
---
------------------------------------------------------------------------
-
--- TODO: Add documentation
-function FullScreenWindow:viewerGroupUI()
-	local ui = self:rootGroupUI()
-	if ui then
-		local group = nil
-		if #ui == 1 then
-			group = ui[1]
-		else
-			group = axutils.childMatching(ui, function(element) return #element == 2 end)
-		end
-		if #group == 2 and axutils.childWithRole(group, "AXImage") ~= nil then
-			return group
-		end
 	end
 	return nil
 end

@@ -14,6 +14,7 @@
 --
 --------------------------------------------------------------------------------
 local axutils						= require("cp.ui.axutils")
+local prop							= require("cp.prop")
 
 --------------------------------------------------------------------------------
 --
@@ -32,65 +33,97 @@ end
 --- Creates a new CheckBox
 function CheckBox:new(parent, finderFn)
 	local o = {_parent = parent, _finder = finderFn}
-	setmetatable(o, self)
-	self.__index = self
+	prop.extend(o, CheckBox)
+
+--- cp.ui.CheckBox.UI <cp.prop: axuielement; read-only>
+--- Field
+--- The UI element for the checkbox.
+	o.UI = prop(function(self)
+		local ui = self._finder()
+		return axutils.isValid(ui) and CheckBox.matches(ui) and ui
+	end):bind(o):monitor(parent.UI)
+
+--- cp.ui.CheckBox.showing <cp.prop: boolean; read-only>
+--- Field
+--- Returns `true` if the element is showing.
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil and self:parent():showing()
+	end):bind(o)
+
+--- cp.ui.CheckBox.checked <cp.prop: boolean>
+--- Field
+--- If `true`, the checkbox is checked.
+	o.checked = o.UI:mutate(
+		function(ui, self)
+			return ui and ui:value() == 1
+		end,
+		function(ui, checked, self)
+			local value = checked and 1 or 0
+			if ui and ui:value() ~= value then
+				ui:doPress()
+			end
+		end
+	):bind(o)
+
+--- cp.ui.CheckBox.enabled <cp.prop: boolean; read-only>
+--- Field
+--- If `true`, the checkbox is enabled.
+	o.enabled = o.UI:mutate(
+		function(ui, self)
+			return ui and ui:enabled()
+		end
+	)
+
 	return o
 end
 
--- TODO: Add documentation
+--- cp.ui.CheckBox:parent() -> table
+--- Method
+--- Returns the parent object.
+---
+--- Parameters:
+--- * None
+---
+--- Returns:
+--- * The parent object.
 function CheckBox:parent()
 	return self._parent
 end
 
-function CheckBox:isShowing()
-	return self:UI() ~= nil and self:parent():isShowing()
-end
-
--- TODO: Add documentation
-function CheckBox:UI()
-	return axutils.cache(self, "_ui", function()
-		return self._finder()
-	end,
-	CheckBox.matches)
-end
-
 -- TODO: Add documentation
 function CheckBox:isChecked()
-	local ui = self:UI()
-	return ui and ui:value() == 1
+	return self:checked()
 end
 
 -- TODO: Add documentation
 function CheckBox:check()
-	local ui = self:UI()
-	if ui and ui:value() == 0 then
-		ui:doPress()
-	end
+	self:checked(true)
 	return self
 end
 
 -- TODO: Add documentation
 function CheckBox:uncheck()
-	local ui = self:UI()
-	if ui and ui:value() == 1 then
-		ui:doPress()
-	end
+	self:checked(false)
 	return self
 end
 
 -- TODO: Add documentation
 function CheckBox:toggle()
-	local ui = self:UI()
-	if ui then
-		ui:doPress()
-	end
+	self.checked:toggle()
 	return self
 end
 
--- TODO: Add documentation
+--- cp.ui.CheckBox:isEnabled()
+--- Method
+--- Checks if the checkbox is enabled.
+---
+--- Parameters:
+--- * None
+---
+--- Returns:
+--- * `true` if the checkbox is enabled.
 function CheckBox:isEnabled()
-	local ui = self:UI()
-	return ui and ui:enabled()
+	return self:enabled()
 end
 
 -- TODO: Add documentation

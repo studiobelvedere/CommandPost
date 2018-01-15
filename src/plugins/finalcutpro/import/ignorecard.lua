@@ -48,7 +48,7 @@ function mod.getDeviceWatcher()
 
 				local mediaImport = fcp:mediaImport()
 
-				if mediaImport:isShowing() then
+				if mediaImport:showing() then
 					-- Media Import was already open. Bail!
 					--log.df("Already in Media Import. Continuing...")
 					return
@@ -59,7 +59,7 @@ function mod.getDeviceWatcher()
 				local currentApplication = application.frontmostApplication()
 				--log.df("Currently using '"..currentApplication:name().."'")
 
-				local fcpxHidden = not fcp:isShowing()
+				local fcpxHidden = not fcp:showing()
 
 				mediaImportTimer = timer.doUntil(
 					function()
@@ -70,7 +70,7 @@ function mod.getDeviceWatcher()
 							--log.df("FCPX is not running. Stop watching.")
 							stopMediaImportTimer = true
 						else
-							if mediaImport:isShowing() then
+							if mediaImport:showing() then
 								mediaImport:hide()
 								if fcpxHidden then fcp:hide() end
 								currentApplication:activate()

@@ -17,6 +17,7 @@ local log							= require("hs.logger").new("button")
 local inspect						= require("hs.inspect")
 
 local axutils						= require("cp.ui.axutils")
+local prop							= require("cp.prop")
 
 --------------------------------------------------------------------------------
 --
@@ -35,32 +36,28 @@ end
 --- Creates a new Button
 function Button:new(parent, finderFn)
 	local o = {_parent = parent, _finder = finderFn}
-	setmetatable(o, self)
-	self.__index = self
+	prop.extend(o, Button)
+
+	-- TODO: Add documentation
+	o.UI = prop(function(self)
+		return self._finder()
+	end):bind(o)
+
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil and self:parent():showing()
+	end):bind(o):monitor(parent.showing)
+
+	-- TODO: Add documentation
+	o.enabled = o.UI:mutate(function(ui, self)
+		return ui and ui:enabled()
+	end):bind(o)
+
 	return o
 end
 
 -- TODO: Add documentation
 function Button:parent()
 	return self._parent
-end
-
-function Button:isShowing()
-	return self:UI() ~= nil and self:parent():isShowing()
-end
-
--- TODO: Add documentation
-function Button:UI()
-	return axutils.cache(self, "_ui", function()
-		return self._finder()
-	end,
-	Button.matches)
-end
-
--- TODO: Add documentation
-function Button:isEnabled()
-	local ui = self:UI()
-	return ui and ui:enabled()
 end
 
 -- TODO: Add documentation

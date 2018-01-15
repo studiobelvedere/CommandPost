@@ -30,8 +30,8 @@ local function scanVideoEffects()
 	-- Make sure Effects panel is open:
 	--------------------------------------------------------------------------------
 	local effects = fcp:effects()
-	local effectsShowing = effects:isShowing()
-	if not effects:show():isShowing() then
+	local effectsShowing = effects:showing()
+	if not effects:show():showing() then
 		dialog.displayErrorMessage("Unable to activate the Effects panel.")
 		return nil
 	end
@@ -58,7 +58,7 @@ local function scanVideoEffects()
 	--------------------------------------------------------------------------------
 	-- If it's still invisible, we have a problem.
 	--------------------------------------------------------------------------------
-	if not sidebar:isShowing() then
+	if not sidebar:showing() then
 		dialog.displayErrorMessage("Unable to activate the Effects sidebar.")
 		return nil
 	end
@@ -117,8 +117,8 @@ local function scanAudioEffects()
 	-- Make sure Effects panel is open:
 	--------------------------------------------------------------------------------
 	local effects = fcp:effects()
-	local effectsShowing = effects:isShowing()
-	if not effects:show():isShowing() then
+	local effectsShowing = effects:showing()
+	if not effects:show():showing() then
 		dialog.displayErrorMessage("Unable to activate the Effects panel.")
 		return nil
 	end
@@ -145,7 +145,7 @@ local function scanAudioEffects()
 	--------------------------------------------------------------------------------
 	-- If it's still invisible, we have a problem.
 	--------------------------------------------------------------------------------
-	if not sidebar:isShowing() then
+	if not sidebar:showing() then
 		dialog.displayErrorMessage("Unable to activate the Effects sidebar.")
 		return nil
 	end
@@ -205,7 +205,7 @@ local function scanTransitions()
 	--------------------------------------------------------------------------------
 	local effects = fcp:effects()
 	local effectsLayout = nil
-	if effects:isShowing() then
+	if effects:showing() then
 		effectsLayout = effects:saveLayout()
 	end
 
@@ -213,8 +213,8 @@ local function scanTransitions()
 	-- Make sure Transitions panel is open:
 	--------------------------------------------------------------------------------
 	local transitions = fcp:transitions()
-	local transitionsShowing = transitions:isShowing()
-	if not transitions:show():isShowing() then
+	local transitionsShowing = transitions:showing()
+	if not transitions:show():showing() then
 		dialog.displayErrorMessage("Unable to activate the Transitions panel.")
 		return nil
 	end
@@ -238,7 +238,7 @@ local function scanTransitions()
 
 	transitions:showSidebar()
 
-	if not sidebar:isShowing() then
+	if not sidebar:showing() then
 		dialog.displayErrorMessage("Unable to activate the Transitions sidebar.")
 		return nil
 	end
@@ -283,7 +283,7 @@ local function scanGenerators()
 	--------------------------------------------------------------------------------
 	-- Make sure Generators and Generators panel is open:
 	--------------------------------------------------------------------------------
-	if not generators:show():isShowing() then
+	if not generators:show():showing() then
 		dialog.displayErrorMessage("Unable to activate the Generators and Generators panel.")
 		return nil
 	end
@@ -342,7 +342,7 @@ local function scanTitles()
 	--------------------------------------------------------------------------------
 	-- Make sure Titles and Generators panel is open:
 	--------------------------------------------------------------------------------
-	if not generators:show():isShowing() then
+	if not generators:show():showing() then
 		dialog.displayErrorMessage("Unable to activate the Titles and Generators panel.")
 		return nil
 	end

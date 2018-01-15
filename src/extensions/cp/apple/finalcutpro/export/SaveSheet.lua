@@ -41,7 +41,21 @@ end
 -- TODO: Add documentation
 function SaveSheet:new(parent)
 	local o = {_parent = parent}
-	return prop.extend(o, SaveSheet)
+	prop.extend(o, SaveSheet)
+
+	o.UI = parent.UI:mutate(function(ui, self)
+		return axutils.childMatching(ui, SaveSheet.matches)
+	end):bind(o)
+
+--- cp.apple.finalcutpro.export.SaveSheet.showing <cp.prop: boolean; read-only>
+--- Field
+--- Is the Save Sheet showing?
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil or self:replaceAlert():showing()
+	end):bind(o)
+	o.isShowing = o.showing
+
+	return o
 end
 
 -- TODO: Add documentation
@@ -53,21 +67,6 @@ end
 function SaveSheet:app()
 	return self:parent():app()
 end
-
--- TODO: Add documentation
-function SaveSheet:UI()
-	return axutils.cache(self, "_ui", function()
-		return axutils.childMatching(self:parent():UI(), SaveSheet.matches)
-	end,
-	SaveSheet.matches)
-end
-
---- cp.apple.finalcutpro.export.SaveSheet <cp.prop: boolean; read-only>
---- Field
---- Is the Save Sheet showing?
-SaveSheet.isShowing = prop.new(function(self)
-	return self:UI() ~= nil or self:replaceAlert():isShowing()
-end):bind(SaveSheet)
 
 -- TODO: Add documentation
 function SaveSheet:hide()
@@ -116,7 +115,7 @@ end
 
 -- TODO: Add documentation
 function SaveSheet:setPath(path)
-	if self:isShowing() then
+	if self:showing() then
 		-- Display the 'Go To' prompt
 		self:goToPrompt():show():setValue(path):pressDefault()
 	end

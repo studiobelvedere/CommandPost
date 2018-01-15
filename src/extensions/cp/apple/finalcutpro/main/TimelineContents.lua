@@ -43,7 +43,46 @@ end
 -- TODO: Add documentation
 function TimelineContents:new(parent)
 	local o = {_parent = parent}
-	return prop.extend(o, TimelineContents)
+	prop.extend(o, TimelineContents)
+
+-- TODO: Add documentation
+	o.scrollAreaUI = parent.mainUI:mutate(function(main, self)
+		if main then
+			return axutils.childMatching(main, function(child)
+				if child:attributeValue("AXRole") == "AXScrollArea" then
+					local contents = child:attributeValue("AXContents")
+					return axutils.childMatching(contents, TimelineContents.matches) ~= nil
+				end
+				return false
+			end)
+		end
+		return nil
+	end):bind(o)
+
+	-- TODO: Add documentation
+	o.UI = o.scrollAreaUI:mutate(function(scrollArea, self)
+		if scrollArea then
+			return axutils.childMatching(scrollArea, TimelineContents.matches)
+		end
+		return nil
+	end):bind(o)
+
+	-- TODO: Add documentation
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil
+	end):bind(o)
+
+	-- TODO: Add documentation
+	o.horizontalScrollBarUI = o.scrollAreaUI:mutate(function(ui, self)
+		return ui and ui:attributeValue("AXHorizontalScrollBar")
+	end):bind(o)
+
+	-- TODO: Add documentation
+	o.verticalScrollBarUI = o.scrollAreaUI:mutate(function(ui, self)
+		return ui and ui:attributeValue("AXVerticalScrollBar")
+	end):bind(o)
+
+	return o
 end
 
 -- TODO: Add documentation
@@ -61,38 +100,6 @@ end
 -- TIMELINE CONTENT UI:
 --
 -----------------------------------------------------------------------
-
--- TODO: Add documentation
-function TimelineContents:UI()
-	return axutils.cache(self, "_ui", function()
-		local scrollArea = self:scrollAreaUI()
-		if scrollArea then
-			return axutils.childMatching(scrollArea, TimelineContents.matches)
-		end
-		return nil
-	end,
-	TimelineContents.matches)
-end
-
--- TODO: Add documentation
-function TimelineContents:scrollAreaUI()
-	local main = self:parent():mainUI()
-	if main then
-		return axutils.childMatching(main, function(child)
-			if child:attributeValue("AXRole") == "AXScrollArea" then
-				local contents = child:attributeValue("AXContents")
-				return axutils.childMatching(contents, TimelineContents.matches) ~= nil
-			end
-			return false
-		end)
-	end
-	return nil
-end
-
--- TODO: Add documentation
-TimelineContents.isShowing = prop.new(function(self)
-	return self:UI() ~= nil
-end):bind(TimelineContents)
 
 -- TODO: Add documentation
 function TimelineContents:show()
@@ -136,18 +143,6 @@ end
 -- VIEWING AREA:
 --
 -----------------------------------------------------------------------
-
--- TODO: Add documentation
-function TimelineContents:horizontalScrollBarUI()
-	local ui = self:scrollAreaUI()
-	return ui and ui:attributeValue("AXHorizontalScrollBar")
-end
-
--- TODO: Add documentation
-function TimelineContents:verticalScrollBarUI()
-	local ui = self:scrollAreaUI()
-	return ui and ui:attributeValue("AXVerticalScrollBar")
-end
 
 -- TODO: Add documentation
 function TimelineContents:viewFrame()

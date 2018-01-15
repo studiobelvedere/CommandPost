@@ -21,6 +21,7 @@ local geometry						= require("hs.geometry")
 local just							= require("cp.just")
 local axutils						= require("cp.ui.axutils")
 local tools							= require("cp.tools")
+local prop							= require("cp.prop")
 
 --------------------------------------------------------------------------------
 --
@@ -185,7 +186,9 @@ end
 ---  * `finder`		- A function which will return the `axuielement` that this table represents.
 function Table.new(parent, finder)
 	local o = {_parent = parent, _finder = finder}
-	return setmetatable(o, Table.mt)
+	prop.extend(o, Table.mt)
+
+	return o
 end
 
 --- cp.ui.Table:uncached() -> Table
@@ -214,16 +217,10 @@ function Table.mt:parent()
 	return self._parent
 end
 
---- cp.ui.Table:UI() -> axuielement | nil
---- Method
+--- cp.ui.Table.UI() <cp.prop: axuielement; read-only>
+--- Field
 --- Returns the current `axuielement` element for the table. May be `nil` if it is not available at present.
----
---- Parameters:
----  * None
----
---- Returns:
----  * The `axuielement` for the Table.
-function Table.mt:UI()
+Table.mt.UI = prop(function(self)
 	if not self._uncached then
 		return axutils.cache(self, "_ui", function()
 			return self._finder()
@@ -232,24 +229,14 @@ function Table.mt:UI()
 	else
 		return self._finder()
 	end
-end
+end):bind(Table.mt)
 
---- cp.ui.Table:UI() -> axuielement | nil
---- Method
+--- cp.ui.Table.contentUI() <cp.prop: axuielement; read-only>
+--- Field
 --- Returns the `axuielement` that contains the actual rows.
----
---- Parameters:
----  * None
----
---- Returns:
----  * The content UI element, or `nil`.
-function Table.mt:contentUI()
-	return axutils.cache(self, "_content", function()
-		local ui = self:UI()
-		return ui and axutils.childMatching(ui, Table.matchesContent)
-	end,
-	Table.matchesContent)
-end
+Table.mt.contentUI = Table.mt.UI:mutate(function(ui, self)
+	return ui and axutils.childMatching(ui, Table.matchesContent)
+end):bind(Table.mt)
 
 --- cp.ui.Table.matchesContent(element) -> boolean
 --- Function
@@ -268,48 +255,28 @@ function Table.matchesContent(element)
 	return false
 end
 
---- cp.ui.Table:verticalScrollBarUI() -> axuielement | nil
---- Method
+--- cp.ui.Table.verticalScrollBarUI() <cp.prop: axuielement; read-only>
+--- Field
 --- Finds the vertical scroll bar UI element, if present.
----
---- Parameters:
----  * None
----
---- Returns:
----  * The UI element, or `nil`.
-function Table.mt:verticalScrollBarUI()
-	local ui = self:UI()
+Table.mt.verticalScrollBarUI = Table.mt.UI:mutate(function(ui, self)
 	return ui and ui:attributeValue("AXVerticalScrollBar")
-end
+end):bind(Table.mt)
 
---- cp.ui.Table:horizontalScrollBarUI() -> axuielement | nil
---- Method
+--- cp.ui.Table.horizontalScrollBarUI <cp.prop: axuielement; read-only>
+--- Field
 --- Finds the horizontal scroll bar UI element, if present.
----
---- Parameters:
----  * None
----
---- Returns:
----  * The UI element, or `nil`.
-function Table.mt:horizontalScrollBarUI()
-	local ui = self:UI()
+Table.mt.horizontalScrollBarUI = Table.mt.UI:mutate(function(ui, self)
 	return ui and ui:attributeValue("AXHorizontalScrollBar")
-end
+end):bind(Table.mt)
 
---- cp.ui.Table:isShowing() -> boolean
---- Method
+--- cp.ui.Table.showing <cp.prop: boolean; read-only>
+--- Field
 --- Checks if the table is visible.
----
---- Parameters:
----  * None
----
---- Returns:
----  * `true` if the element is visible.
-function Table.mt:isShowing()
-	return self:UI() ~= nil
-end
+Table.mt.showing = Table.mt.UI:mutate(function(ui, self)
+	return ui ~= nil
+end):bind(Table.mt)
 
---- cp.ui.Table:isFocused() -> boolean
+--- cp.ui.Table:focused() -> boolean
 --- Method
 --- Checks if the table is focused by the user.
 ---
@@ -318,10 +285,10 @@ end
 ---
 --- Returns:
 ---  * `true` if the element is focused.
-function Table.mt:isFocused()
-	local ui = self:UI()
+Table.mt.focused = Table.mt.UI:mutate(function(ui, self)
 	return ui and ui:focused() or axutils.childWith(ui, "AXFocused", true) ~= nil
-end
+end):bind(Table.mt)
+Table.mt.isFocused = Table.mt.focused
 
 --- cp.ui.Table:rowsUI([filterFn]) -> table of axuielements | nil
 --- Method
@@ -330,7 +297,7 @@ end
 ---
 --- Parameters:
 ---  * `filterFn`	- An optional function that will be called to check if individual rows should be included. If not provided, all rows are returned.
---- 
+---
 --- Returns:
 ---  * Table of rows. If the table is visible but no rows match, it will be an empty table, otherwise it will be `nil`.
 function Table.mt:rowsUI(filterFn)
@@ -356,7 +323,7 @@ end
 ---
 --- Parameters:
 ---  * `filterFn`	- An optional function that will be called to check if individual rows should be included. If not provided, all rows are returned.
---- 
+---
 --- Returns:
 ---  * Table of rows. If the table is visible but no rows match, it will be an empty table, otherwise it will be `nil`.
 function Table.mt:topRowsUI(filterFn)
@@ -413,7 +380,7 @@ function Table.mt:findCellUI(rowNumber, columnId)
 end
 
 -- TODO: Add documentation
-function Table.mt:selectedRowsUI()
+Table.mt.selectedRowsUI = prop(function(self)
 	local rows = self:rowsUI()
 	if rows then
 		local selected = {}
@@ -425,7 +392,7 @@ function Table.mt:selectedRowsUI()
 		return selected
 	end
 	return nil
-end
+end):bind(Table.mt)
 
 -- TODO: Add documentation
 function Table.mt:viewFrame()

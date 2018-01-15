@@ -7,7 +7,7 @@
 --- === cp.dialog ===
 ---
 --- A collection of handy Dialog tools for CommandPost.
---- 
+---
 --- This extension should no longer be used in favour of `hs.dialog`.
 
 --------------------------------------------------------------------------------
@@ -53,8 +53,8 @@ local function as(appleScript)
 	-- log.df("originalFocusedWindow: %s", originalFocusedWindow)
 
 	local whichBundleID = hs.processInfo["bundleID"]
-	if originalFocusedWindow and originalFocusedWindow:application():bundleID() == fcp.BUNDLE_ID then
-		whichBundleID = fcp.BUNDLE_ID
+	if originalFocusedWindow and originalFocusedWindow:application():bundleID() == fcp:bundleID() then
+		whichBundleID = fcp:bundleID()
 	end
 	--log.df("whichBundleID: %s", whichBundleID)
 
@@ -99,7 +99,7 @@ end
 ---
 --- Returns:
 ---  * `false` if cancelled if pressed otherwise the text entered in the dialog box
---- 
+---
 --- Notes:
 ---  * IMPORTANT: This should no longer be used in favour of `hs.dialog.textPrompt`
 function dialog.displaySmallNumberTextBoxMessage(whatMessage, whatErrorMessage, defaultAnswer)
@@ -141,7 +141,7 @@ end
 ---
 --- Returns:
 ---  * `false` if cancelled if pressed otherwise the text entered in the dialog box
---- 
+---
 --- Notes:
 ---  * IMPORTANT: This should no longer be used in favour of `hs.dialog.textPrompt`
 function dialog.displayTextBoxMessage(whatMessage, whatErrorMessage, defaultAnswer, validationFn)
@@ -186,7 +186,7 @@ end
 ---
 --- Returns:
 ---  * `false` if cancelled if pressed otherwise the path to the file as a string
---- 
+---
 --- Notes:
 ---  * IMPORTANT: This should no longer be used in favour of `hs.dialog.chooseFileOrFolder`
 function dialog.displayChooseFile(whatMessage, fileType, defaultLocation)
@@ -216,7 +216,7 @@ end
 ---
 --- Returns:
 ---  * `false` if cancelled if pressed otherwise the path to the folder as a string
---- 
+---
 --- Notes:
 ---  * IMPORTANT: This should no longer be used in favour of `hs.dialog.chooseFileOrFolder`
 function dialog.displayChooseFolder(whatMessage, defaultLocation)
@@ -246,14 +246,14 @@ end
 ---
 --- Returns:
 ---  * None
---- 
+---
 --- Notes:
 ---  * IMPORTANT: This should no longer be used in favour of `hs.dialog.alert`
 function dialog.displayAlertMessage(message, informativeText)
 
 	if not message then message = "" end
 	if not informativeText then informativeText = "" end
-		
+
 	local originalFocusedWindow = window.focusedWindow()
 	config.application():activate()
 	hsDialog.blockAlert(message, informativeText, i18n("ok"), "", "informational")
@@ -270,7 +270,7 @@ end
 ---
 --- Returns:
 ---  * None
---- 
+---
 --- Notes:
 ---  * IMPORTANT: This should no longer be used in favour of `hs.dialog.alert`
 function dialog.displayErrorMessage(message, informativeText)
@@ -282,7 +282,7 @@ function dialog.displayErrorMessage(message, informativeText)
 
 	--------------------------------------------------------------------------------
 	-- Display Dialog Box:
-	--------------------------------------------------------------------------------	
+	--------------------------------------------------------------------------------
 	if not message then message = "" end
 	if not informativeText then informativeText = "" end
 	local errorMessage = message .. "\n\n" .. i18n("commonErrorMessageEnd")
@@ -294,7 +294,7 @@ function dialog.displayErrorMessage(message, informativeText)
 		local feedback = require("cp.feedback") -- This is defined here, otherwise it will cause an error.
 		feedback.showFeedback(false)
 	end
-	
+
 end
 
 --- cp.dialog.displayMessage(whatMessage, optionalButtons) -> object
@@ -306,7 +306,7 @@ end
 ---
 --- Returns:
 ---  * None
---- 
+---
 --- Notes:
 ---  * IMPORTANT: This should no longer be used in favour of `hs.dialog.alert`
 function dialog.displayMessage(whatMessage, optionalButtons)
@@ -340,25 +340,25 @@ end
 ---
 --- Returns:
 ---  * `true` if yes is clicked otherwise `false`
---- 
+---
 --- Notes:
 ---  * IMPORTANT: This should no longer be used in favour of `hs.dialog.alert`
 function dialog.displayYesNoQuestion(message, informativeText) -- returns true or false
 
 	if not message then message = "" end
 	if not informativeText then informativeText = "" end
-		
+
 	local originalFocusedWindow = window.focusedWindow()
 	config.application():activate()
 	local result = hsDialog.blockAlert(message, informativeText, i18n("yes"), i18n("no"), "informational")
 	if originalFocusedWindow then originalFocusedWindow:focus() end
-	
+
 	if result == i18n("yes") then
 		return true
 	else
 		return false
 	end
-	
+
 end
 
 --- cp.dialog.displayChooseFromList(dialogPrompt, listOptions, defaultItems) -> table

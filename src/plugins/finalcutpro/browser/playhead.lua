@@ -191,7 +191,7 @@ function mod.highlight()
 	-- Get Browser Persistent Playhead:
 	--------------------------------------------------------------------------------
 	local playhead = fcp:libraries():playhead()
-	if playhead:isShowing() then
+	if playhead:showing() then
 		mod.highlightFrame(playhead:getFrame())
 	end
 end

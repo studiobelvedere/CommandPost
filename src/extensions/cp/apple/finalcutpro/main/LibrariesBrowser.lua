@@ -41,7 +41,47 @@ local Libraries = {}
 -- TODO: Add documentation
 function Libraries:new(parent)
 	local o = {_parent = parent}
-	return prop.extend(o, Libraries)
+	prop.extend(o, Libraries)
+
+--- cp.apple.finalcutpro.main.LibrariesBrowser.UI <cp.prop: axuielement; read-only>
+--- Field
+--- The main UI for the Libraries Browser.
+	o.UI = parent.UI:mutate(function(parentUI, self)
+		return self:showing() and parentUI or nil
+	end):bind(o)
+
+--- cp.apple.finalcutpro.main.LibraryBrowser.mainGroupUI <cp.prop: axuielement; read-only>
+--- Field
+--- The main group UI for the libraries browser.
+	o.mainGroupUI = o.UI:mutate(function(ui, self)
+		return ui and axutils.childWithRole(ui, "AXSplitGroup")
+	end):bind(o)
+
+	-- TODO: Add documentation
+	o.showing = prop.new(function(self)
+		return self:parent():showing() and self:parent():showLibraries():isChecked()
+	end):bind(o)
+	o.isShowing = o.showing
+
+--- cp.apple.finalcutpro.main.LibraryBrowser.listView <cp.prop: boolean; read-only>
+--- Field
+--- Checks if we are in 'list view' mode.
+	o.listView = o:list().showing:wrap(o)
+	o.isListView = o.listView
+
+--- cp.apple.finalcutpro.main.LibraryBrowser.filmstripView <cp.prop: boolean; read-only>
+--- Field
+--- Checks if we are in 'filmstrip view' mode.
+	o.filmstripView = o:filmstrip().showing:wrap(o)
+	o.isFilmstripView = o.filmstripView
+
+	-- TODO: Add documentation
+	o.focused = o.UI:mutate(function(ui, self)
+		return ui and ui:attributeValue("AXFocused") or axutils.childWith(ui, "AXFocused", true) ~= nil
+	end):bind(o)
+	o.isFocused = o.focused
+
+	return o
 end
 
 -- TODO: Add documentation
@@ -61,41 +101,10 @@ end
 -----------------------------------------------------------------------
 
 -- TODO: Add documentation
-function Libraries:UI()
-	if self:isShowing() then
-		return axutils.cache(self, "_ui", function()
-			return self:parent():UI()
-		end)
-	end
-	return nil
-end
-
--- TODO: Add documentation
-Libraries.isShowing = prop.new(function(self)
-	return self:parent():isShowing() and self:parent():showLibraries():isChecked()
-end):bind(Libraries)
-
--- TODO: Add documentation
-Libraries.isListView = prop.new(function(self)
-	return self:list():isShowing()
-end):bind(Libraries)
-
--- TODO: Add documentation
-Libraries.isFilmstripView = prop.new(function(self)
-	return self:filmstrip():isShowing()
-end):bind(Libraries)
-
--- TODO: Add documentation
-Libraries.isFocused = prop.new(function(self)
-	local ui = self:UI()
-	return ui and ui:attributeValue("AXFocused") or axutils.childWith(ui, "AXFocused", true) ~= nil
-end):bind(Libraries)
-
--- TODO: Add documentation
 function Libraries:show()
 	local browser = self:parent()
 	if browser then
-		if not browser:isShowing() then
+		if not browser:showing() then
 			browser:showOnPrimary()
 		end
 		browser:showLibraries():check()
@@ -117,7 +126,7 @@ end
 
 -- TODO: Add documentation
 function Libraries:playhead()
-	if self:list():isShowing() then
+	if self:list():showing() then
 		return self:list():playhead()
 	else
 		return self:filmstrip():playhead()
@@ -126,7 +135,7 @@ end
 
 -- TODO: Add documentation
 function Libraries:skimmingPlayhead()
-	if self:list():isShowing() then
+	if self:list():showing() then
 		return self:list():skimmingPlayhead()
 	else
 		return self:filmstrip():skimmingPlayhead()
@@ -215,15 +224,6 @@ function Libraries:selectClipFiltering(filterType)
 		end
 	end
 	return self
-end
-
--- TODO: Add documentation
-function Libraries:mainGroupUI()
-	return axutils.cache(self, "_mainGroup",
-	function()
-		local ui = self:UI()
-		return ui and axutils.childWithRole(ui, "AXSplitGroup")
-	end)
 end
 
 -- TODO: Add documentation
@@ -387,7 +387,7 @@ end
 -- TODO: Add documentation
 function Libraries:saveLayout()
 	local layout = {}
-	if self:isShowing() then
+	if self:showing() then
 		layout.showing = true
 		layout.sidebar = self:sidebar():saveLayout()
 		layout.selectedClips = self:selectedClips()

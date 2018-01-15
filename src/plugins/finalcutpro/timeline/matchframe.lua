@@ -351,7 +351,7 @@ function mod.matchFrame(focus)
 		-- Get Browser Playhead:
 		--------------------------------------------------------------------------------
 		local playhead = libraries:playhead()
-		if not playhead:isShowing() then
+		if not playhead:showing() then
 			dialog.displayErrorMessage("Unable to find Browser Persistent Playhead.\n\nError occurred in matchFrame().")
 			return nil
 		end
@@ -365,7 +365,7 @@ function mod.matchFrame(focus)
 			--------------------------------------------------------------------------------
 			-- Ensure the Search Bar is visible
 			--------------------------------------------------------------------------------
-			if not libraries:search():isShowing() then
+			if not libraries:search():showing() then
 				libraries:searchToggle():press()
 			end
 

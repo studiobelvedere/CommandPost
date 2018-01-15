@@ -37,7 +37,24 @@ end
 -- TODO: Add documentation
 function TimelineAppearance:new(parent)
 	local o = {_parent = parent}
-	return prop.extend(o, TimelineAppearance)
+	prop.extend(o, TimelineAppearance)
+
+	-- TODO: Add documentation
+	o.toggleUI = parent.UI:mutate(function(ui, self)
+		return axutils.childWithID(ui, id "Toggle")
+	end):bind(o)
+
+	-- TODO: Add documentation
+	o.UI = o.toggleUI:mutate(function(ui, self)
+		return axutils.childMatching(ui, TimelineAppearance.matches)
+	end):bind(o)
+
+	-- TODO: Add documentation
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil
+	end):bind(o)
+
+	return o
 end
 
 -- TODO: Add documentation
@@ -57,13 +74,6 @@ end
 -----------------------------------------------------------------------
 
 -- TODO: Add documentation
-function TimelineAppearance:toggleUI()
-	return axutils.cache(self, "_toggleUI", function()
-		return axutils.childWithID(self:parent():UI(), id "Toggle")
-	end)
-end
-
--- TODO: Add documentation
 function TimelineAppearance:toggle()
 	if not self._toggle then
 		self._toggle = CheckBox:new(self:parent(), function()
@@ -74,21 +84,8 @@ function TimelineAppearance:toggle()
 end
 
 -- TODO: Add documentation
-function TimelineAppearance:UI()
-	return axutils.cache(self, "_ui", function()
-		return axutils.childMatching(self:toggleUI(), TimelineAppearance.matches)
-	end,
-	TimelineAppearance.matches)
-end
-
--- TODO: Add documentation
-TimelineAppearance.isShowing = prop.new(function(self)
-	return self:UI() ~= nil
-end):bind(TimelineAppearance)
-
--- TODO: Add documentation
 function TimelineAppearance:show()
-	if not self:isShowing() then
+	if not self:showing() then
 		self:toggle():check()
 	end
 	return self
@@ -100,7 +97,7 @@ function TimelineAppearance:hide()
 	if ui then
 		ui:doCancel()
 	end
-	just.doWhile(function() return self:isShowing() end)
+	just.doWhile(function() return self:showing() end)
 	return self
 end
 

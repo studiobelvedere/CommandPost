@@ -81,7 +81,46 @@ end
 ---  * App
 function Inspector:new(parent)
 	local o = {_parent = parent}
-	return prop.extend(o, Inspector)
+	prop.extend(o, Inspector)
+
+--- cp.apple.finalcutpro.main.Inspector.UI <cp.prop: axuielement; read-only>
+--- Field
+--- Returns the Inspector's `axuielement`.
+	o.UI = prop(function(self)
+		ui = self:parent():rightGroupUI()
+		if ui then
+			-----------------------------------------------------------------------
+			-- It's in the right panel (full-height):
+			-----------------------------------------------------------------------
+			if Inspector.matches(ui) then
+				return ui
+			end
+		else
+			-----------------------------------------------------------------------
+			-- It's in the top-left panel (half-height):
+			-----------------------------------------------------------------------
+			local top = self:parent():topGroupUI()
+			if top then
+				for i,child in ipairs(top) do
+					if Inspector.matches(child) then
+						return child
+					end
+				end
+			end
+		end
+		return nil
+	end):bind(o)
+	:monitor(parent.rightGroupUI)
+	:monitor(parent.topGroupUI)
+
+--- cp.apple.finalcutpro.main.Inspector.showing <cp.prop: boolean; read-only>
+--- Field
+--- Returns `true` if the Inspector is showing otherwise `false`.
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil
+	end):bind(o)
+
+	return o
 end
 
 --- cp.apple.finalcutpro.main.Inspector:parent() -> Parent
@@ -115,59 +154,6 @@ end
 -- INSPECTOR UI:
 --
 -----------------------------------------------------------------------
-
---- cp.apple.finalcutpro.main.Inspector:UI() -> axuielementObject
---- Method
---- Returns the Inspectors Accessibility Object
----
---- Parameters:
----  * None
----
---- Returns:
----  * An `axuielementObject` on `nil`
-function Inspector:UI()
-	return axutils.cache(self, "_ui",
-	function()
-		local parent = self:parent()
-		local ui = parent:rightGroupUI()
-		if ui then
-			-----------------------------------------------------------------------
-			-- It's in the right panel (full-height):
-			-----------------------------------------------------------------------
-			if Inspector.matches(ui) then
-				return ui
-			end
-		else
-			-----------------------------------------------------------------------
-			-- It's in the top-left panel (half-height):
-			-----------------------------------------------------------------------
-			local top = parent:topGroupUI()
-			if top then
-				for i,child in ipairs(top) do
-					if Inspector.matches(child) then
-						return child
-					end
-				end
-			end
-		end
-		return nil
-	end,
-	Inspector.matches)
-end
-
---- cp.apple.finalcutpro.main.Inspector.isShowing() -> boolean
---- Function
---- Returns `true` if the Inspector is showing otherwise `false`
----
---- Parameters:
----  * None
----
---- Returns:
----  * `true` if showing, otherwise `false`
-Inspector.isShowing = prop.new(function(self)
-	local ui = self:UI()
-	return ui ~= nil
-end):bind(Inspector)
 
 --- cp.apple.finalcutpro.main.Inspector:show([tab]) -> Inspector
 --- Method
@@ -254,9 +240,9 @@ function Inspector:selectTab(value)
 		log.ef("selectTab requires a valid tab string: %s", value)
 		return nil
 	end
-	if not self.isShowing() then
+	if not self.showing() then
 		self:show()
-		if not self.isShowing() then
+		if not self.showing() then
 			log.ef("Failed to open Inspector")
 			return nil
 		end

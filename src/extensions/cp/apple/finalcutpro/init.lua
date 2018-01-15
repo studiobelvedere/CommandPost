@@ -62,7 +62,7 @@
 --- Of course, we have a specific support function for that already, so you could do this instead:
 ---
 --- ```lua
---- if fcp:preferencesWindow():isShowing() then
+--- if fcp:preferencesWindow():showing() then
 --- 	-- it's open!
 --- else
 --- 	-- it's closed!
@@ -510,10 +510,11 @@ function App:show()
 	return self
 end
 
---- cp.apple.finalcutpro.isShowing <cp.prop: boolean; read-only>
+--- cp.apple.finalcutpro.showing <cp.prop: boolean; read-only>
 --- Field
 --- Is Final Cut visible on screen?
-App.isShowing = App.application:mutate(function(app) return app and not app:isHidden() end):bind(App)
+App.showing = App.application:mutate(function(app) return app and not app:isHidden() end):bind(App)
+App.isShowing = App.showing
 
 --- cp.apple.finalcutpro:hide() -> cp.apple.finalcutpro
 --- Method
@@ -927,19 +928,12 @@ function App:exportDialog()
 	return self._exportDialog
 end
 
---- cp.apple.finalcutpro:windowsUI() -> axuielement
---- Method
---- Returns the UI containing the list of windows in the app.
----
---- Parameters:
----  * None
----
---- Returns:
----  * The axuielement, or nil if the application is not running.
-function App:windowsUI()
-	local ui = self:UI()
+--- cp.apple.finalcutpro.windowsUI <cp.prop: table; read-only>
+--- Field
+--- Returns the UI containing the list of windows in the app, or `nil` if not running.
+App.windowsUI = App.UI:mutate(function(ui, self)
 	return ui and ui:attributeValue("AXWindows")
-end
+end):bind(App)
 
 ----------------------------------------------------------------------------------------
 ----------------------------------------------------------------------------------------
@@ -1716,14 +1710,14 @@ function App:_initWatchers()
 			if matchesApp(bundleID, appName) then
 				if eventType == applicationwatcher.activated then
 					timer.doAfter(0.01, function()
-						self.isShowing:update()
+						self.showing:update()
 						self.isFrontmost:update()
 					end)
 					self._watchers:notify("active")
 					return
 				elseif eventType == applicationwatcher.deactivated then
 					timer.doAfter(0.01, function()
-						self.isShowing:update()
+						self.showing:update()
 						self.isFrontmost:update()
 					end)
 					self._watchers:notify("inactive")

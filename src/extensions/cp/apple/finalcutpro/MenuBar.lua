@@ -129,7 +129,7 @@ function MenuBar:UI()
 	end)
 end
 
-function MenuBar:isShowing()
+function MenuBar:showing()
 	return self:UI() ~= nil
 end
 

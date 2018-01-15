@@ -40,7 +40,38 @@ end
 -- TODO: Add documentation
 function List:new(parent)
 	local o = {_parent = parent}
-	return prop.extend(o, List)
+	prop.extend(o, List)
+
+-- TODO: Add documentation
+	o.UI = parent.mainGroupUI:mutate(function(main, self)
+		if main then
+			for i,child in ipairs(main) do
+				if child:attributeValue("AXRole") == "AXGroup" and #child == 1 then
+					if List.matches(child[1]) then
+						return child[1]
+					end
+				end
+			end
+		end
+		return nil
+	end):bind(o)
+
+-- TODO: Add documentation
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil and self:parent():showing()
+	end):bind(o):monitor(parent.showing)
+
+-- TODO: Add documentation
+	o.playerUI = o.UI:mutate(function(ui, self)
+		return axutils.childFromTop(ui, id "Player")
+	end):bind(o)
+
+-- TODO: Add documentation
+	o.focused = o.playerUI:mutate(function(player, self)
+		return self:contents():isFocused() or player and player:focused()
+	end):bind(o)
+
+	return o
 end
 
 -- TODO: Add documentation
@@ -59,37 +90,8 @@ end
 --
 -----------------------------------------------------------------------
 
--- TODO: Add documentation
-function List:UI()
-	return axutils.cache(self, "_ui", function()
-		local main = self:parent():mainGroupUI()
-		if main then
-			for i,child in ipairs(main) do
-				if child:attributeValue("AXRole") == "AXGroup" and #child == 1 then
-					if List.matches(child[1]) then
-						return child[1]
-					end
-				end
-			end
-		end
-		return nil
-	end,
-	List.matches)
-end
-
--- TODO: Add documentation
-List.isShowing = prop.new(function(self)
-	return self:UI() ~= nil and self:parent():isShowing()
-end):bind(List)
-
--- TODO: Add documentation
-List.isFocused = prop.new(function(self)
-	local player = self:playerUI()
-	return self:contents():isFocused() or player and player:focused()
-end):bind(List)
-
 function List:show()
-	if not self:isShowing() and self:parent():show():isShowing() then
+	if not self:showing() and self:parent():show():showing() then
 		self:parent():toggleViewMode():press()
 	end
 end
@@ -99,13 +101,6 @@ end
 -- PREVIEW PLAYER:
 --
 -----------------------------------------------------------------------
-
--- TODO: Add documentation
-function List:playerUI()
-	return axutils.cache(self, "_player", function()
-		return axutils.childFromTop(self:UI(), id "Player")
-	end)
-end
 
 -- TODO: Add documentation
 function List:playhead()
@@ -138,7 +133,7 @@ function List:contents()
 	if not self._content then
 		self._content = Table.new(self, function()
 			return axutils.childWithRole(self:UI(), "AXScrollArea")
-		end)
+		end):uncached()
 	end
 	return self._content
 end

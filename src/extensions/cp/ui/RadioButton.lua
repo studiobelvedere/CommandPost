@@ -14,6 +14,7 @@
 --
 --------------------------------------------------------------------------------
 local axutils						= require("cp.ui.axutils")
+local prop							= require("cp.prop")
 
 --------------------------------------------------------------------------------
 --
@@ -32,8 +33,38 @@ end
 --- Creates a new RadioButton
 function RadioButton:new(parent, finderFn)
 	local o = {_parent = parent, _finder = finderFn}
-	setmetatable(o, self)
-	self.__index = self
+	prop.extend(o, RadioButton)
+
+-- TODO: Add documentation
+	o.UI = prop(function(self)
+		local ui = self._finder()
+		return axutils.isValid(ui) and RadioButton.matches(ui) and ui or nil
+	end):bind(o)
+
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil and self:parent():showing()
+	end):bind(o):monitor(parent.showing)
+
+-- TODO: Add documentation
+	o.checked = o.UI:mutate(
+		function(ui, self)
+			return ui and ui:value() == 1
+		end,
+		function(ui, checked, self)
+			local expected = checked and 1 or 0
+			if ui and ui:value() ~= expected then
+				ui:doPress()
+			end
+		end
+	):bind(o)
+	o.isChecked = o.checked
+
+
+-- TODO: Add documentation
+	o.enabled = o.UI:mutate(function(ui, self)
+		return ui and ui:enabled()
+	end):bind(o)
+
 	return o
 end
 
@@ -42,55 +73,22 @@ function RadioButton:parent()
 	return self._parent
 end
 
-function RadioButton:isShowing()
-	return self:UI() ~= nil and self:parent():isShowing()
-end
-
--- TODO: Add documentation
-function RadioButton:UI()
-	return axutils.cache(self, "_ui", function()
-		return self._finder()
-	end,
-	RadioButton.matches)
-end
-
--- TODO: Add documentation
-function RadioButton:isChecked()
-	local ui = self:UI()
-	return ui and ui:value() == 1
-end
-
 -- TODO: Add documentation
 function RadioButton:check()
-	local ui = self:UI()
-	if ui and ui:value() == 0 then
-		ui:doPress()
-	end
+	self:checked(true)
 	return self
 end
 
 -- TODO: Add documentation
 function RadioButton:uncheck()
-	local ui = self:UI()
-	if ui and ui:value() == 1 then
-		ui:doPress()
-	end
+	self:checked(false)
 	return self
 end
 
 -- TODO: Add documentation
 function RadioButton:toggle()
-	local ui = self:UI()
-	if ui then
-		ui:doPress()
-	end
+	self.checked:toggle()
 	return self
-end
-
--- TODO: Add documentation
-function RadioButton:isEnabled()
-	local ui = self:UI()
-	return ui and ui:enabled()
 end
 
 -- TODO: Add documentation

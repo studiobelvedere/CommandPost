@@ -47,8 +47,53 @@ function Viewer:new(app, eventViewer)
 		_app = app,
 		_eventViewer = eventViewer
 	}
+	prop.extend(o, Viewer)
 
-	return prop.extend(o, Viewer)
+-- TODO: Add documentation
+	o.UI = prop(function(self)
+		local app = self:app()
+		if self:isMainViewer() then
+			return self.findViewerUI(app:secondaryWindow(), app:primaryWindow())
+		else
+			return self.findEventViewerUI(app:secondaryWindow(), app:primaryWindow())
+		end
+	end):bind(o)
+	:monitor(app:secondaryWindow().UI)
+	:monitor(app:primaryWindow().UI)
+
+-- TODO: Add documentation
+	o.onSecondary = o.UI:mutate(function(ui, self)
+		return ui and SecondaryWindow.matches(ui:window())
+	end):bind(o)
+	o.isOnSecondary = o.onSecondary
+
+-- TODO: Add documentation
+	o.onPrimary = o.UI:mutate(function(ui, self)
+		return ui and PrimaryWindow.matches(ui:window())
+	end):bind(o)
+	o.isOnPrimary = o.onPrimary
+
+-- TODO: Add documentation
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil
+	end):bind(o)
+
+-- TODO: Add documentation
+	o.topToolbarUI = o.UI:mutate(function(ui, self)
+		return ui and axutils.childFromTop(ui, 1)
+	end):bind(o)
+
+-- TODO: Add documentation
+	o.bottomToolbarUI = o.UI:bind(function(ui, self)
+		return ui and axutils.childFromBottom(ui, 1)
+	end):bind(o)
+
+-- TODO: Add documentation
+	o.formatUI = o.topToolbarUI:mutate(function(ui, self)
+		return ui and axutils.childFromLeft(ui, id "Format")
+	end):bind(o)
+
+	return o
 end
 
 -- TODO: Add documentation
@@ -62,19 +107,6 @@ end
 --
 -----------------------------------------------------------------------
 
--- TODO: Add documentation
-function Viewer:UI()
-	return axutils.cache(self, "_ui", function()
-		local app = self:app()
-		if self:isMainViewer() then
-			return self:findViewerUI(app:secondaryWindow(), app:primaryWindow())
-		else
-			return self:findEventViewerUI(app:secondaryWindow(), app:primaryWindow())
-		end
-	end,
-	Viewer.matches)
-end
-
 -----------------------------------------------------------------------
 --
 -- VIEWER UI:
@@ -82,7 +114,7 @@ end
 -----------------------------------------------------------------------
 
 -- TODO: Add documentation
-function Viewer:findViewerUI(...)
+function Viewer.findViewerUI(...)
 	for i = 1,select("#", ...) do
 		local window = select(i, ...)
 		if window then
@@ -112,7 +144,7 @@ end
 -----------------------------------------------------------------------
 
 -- TODO: Add documentation
-function Viewer:findEventViewerUI(...)
+function Viewer.findEventViewerUI(...)
 	for i = 1,select("#", ...) do
 		local window = select(i, ...)
 		if window then
@@ -151,23 +183,6 @@ Viewer.isMainViewer = prop.new(function(self)
 end):bind(Viewer)
 
 -- TODO: Add documentation
-Viewer.isOnSecondary = prop.new(function(self)
-	local ui = self:UI()
-	return ui and SecondaryWindow.matches(ui:window())
-end):bind(Viewer)
-
--- TODO: Add documentation
-Viewer.isOnPrimary = prop.new(function(self)
-	local ui = self:UI()
-	return ui and PrimaryWindow.matches(ui:window())
-end):bind(Viewer)
-
--- TODO: Add documentation
-Viewer.isShowing = prop.new(function(self)
-	return self:UI() ~= nil
-end):bind(Viewer)
-
--- TODO: Add documentation
 function Viewer:showOnPrimary()
 	local menuBar = self:app():menuBar()
 
@@ -176,7 +191,7 @@ function Viewer:showOnPrimary()
 		menuBar:selectMenu({"Window", "Show in Secondary Display", "Viewers"})
 	end
 
-	if self:isEventViewer() and not self:isShowing() then
+	if self:isEventViewer() and not self:showing() then
 		-- Enable the Event Viewer
 		menuBar:selectMenu({"Window", "Show in Workspace", "Event Viewer"})
 	end
@@ -192,7 +207,7 @@ function Viewer:showOnSecondary()
 		menuBar:selectMenu({"Window", "Show in Secondary Display", "Viewers"})
 	end
 
-	if self:isEventViewer() and not self:isShowing() then
+	if self:isEventViewer() and not self:showing() then
 		-- Enable the Event Viewer
 		menuBar:selectMenu({"Window", "Show in Workspace", "Event Viewer"})
 	end
@@ -206,7 +221,7 @@ function Viewer:hide()
 
 	if self:isEventViewer() then
 		-- Uncheck it from the primary workspace
-		if self:isShowing() then
+		if self:showing() then
 			menuBar:selectMenu({"Window", "Show in Workspace", "Event Viewer"})
 		end
 	elseif self:isOnSecondary() then
@@ -217,32 +232,8 @@ function Viewer:hide()
 end
 
 -- TODO: Add documentation
-function Viewer:topToolbarUI()
-	return axutils.cache(self, "_topToolbar", function()
-		local ui = self:UI()
-		return ui and axutils.childFromTop(ui, 1)
-	end)
-end
-
--- TODO: Add documentation
-function Viewer:bottomToolbarUI()
-	return axutils.cache(self, "_bottomToolbar", function()
-		local ui = self:UI()
-		return ui and axutils.childFromBottom(ui, 1)
-	end)
-end
-
--- TODO: Add documentation
 function Viewer:hasPlayerControls()
 	return self:bottomToolbarUI() ~= nil
-end
-
--- TODO: Add documentation
-function Viewer:formatUI()
-	return axutils.cache(self, "_format", function()
-		local ui = self:topToolbarUI()
-		return ui and axutils.childFromLeft(ui, id "Format")
-	end)
 end
 
 -- TODO: Add documentation

@@ -33,7 +33,44 @@ end
 --- Creates a new Slider
 function Slider:new(parent, finderFn)
 	local o = {_parent = parent, _finder = finderFn}
-	return prop.extend(o, Slider)
+	prop.extend(o, Slider)
+
+	-- TODO: Add documentation
+	o.UI = prop(function(self)
+		local ui = self._finder()
+		return axutils.isValid(ui) and Slider.matches(ui) and ui or nil
+	end):bind(o)
+
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil and self:parent():showing()
+	end):bind(o):monitor(parent.showing)
+
+	o.value = o.UI:mutate(
+		function(ui, self)
+			return ui and ui:attributeValue("AXValue")
+		end,
+		function(ui, value, self)
+			if ui then
+				ui:setAttributeValue("AXValue", value)
+			end
+		end
+	):bind(o)
+
+	o.minValue = o.UI:mutate(function(ui, self)
+		return ui and ui:attributeValue("AXMinValue")
+	end):bind(o)
+
+	o.maxValue = o.UI:mutate(function(ui, self)
+		return ui and ui:attributeValue("AXMaxValue")
+	end):bind(o)
+
+-- TODO: Add documentation
+	o.enabled = o.UI:mutate(function(ui, self)
+		return ui and ui:enabled()
+	end):bind(o)
+	o.isEnabled = o.enabled
+
+	return o
 end
 
 -- TODO: Add documentation
@@ -41,30 +78,6 @@ function Slider:parent()
 	return self._parent
 end
 
-function Slider:isShowing()
-	return self:UI() ~= nil and self:parent():isShowing()
-end
-
--- TODO: Add documentation
-function Slider:UI()
-	return axutils.cache(self, "_ui", function()
-		return self._finder()
-	end,
-	Slider.matches)
-end
-
-Slider.value = prop.new(
-	function(self)
-		local ui = self:UI()
-		return ui and ui:attributeValue("AXValue")
-	end,
-	function(value, self)
-		local ui = self:UI()
-		if ui then
-			ui:setAttributeValue("AXValue", value)
-		end
-	end
-):bind(Slider)
 
 -- TODO: Add documentation
 function Slider:getValue()
@@ -84,20 +97,10 @@ function Slider:shiftValue(value)
 	return self
 end
 
-Slider.minValue = prop.new(function(self)
-	local ui = self:UI()
-	return ui and ui:attributeValue("AXMinValue")
-end)
-
 -- TODO: Add documentation
 function Slider:getMinValue()
 	return self:minValue()
 end
-
-Slider.maxValue = prop.new(function(self)
-	local ui = self:UI()
-	return ui and ui:attributeValue("AXMaxValue")
-end)
 
 -- TODO: Add documentation
 function Slider:getMaxValue()
@@ -120,12 +123,6 @@ function Slider:decrement()
 		ui:doDecrement()
 	end
 	return self
-end
-
--- TODO: Add documentation
-function Slider:isEnabled()
-	local ui = self:UI()
-	return ui and ui:enabled()
 end
 
 -- TODO: Add documentation

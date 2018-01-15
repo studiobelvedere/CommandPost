@@ -110,7 +110,7 @@ if next(queryString) ~= nil then
 	elseif queryString["custom_marker"] then
 		local markerString = queryString["custom_marker"]
 
-		if fcp:isShowing() then
+		if fcp:showing() then
 
 			log.df("Adding Marker: %s", markerString)
 
@@ -127,7 +127,7 @@ if next(queryString) ~= nil then
 		end
 	elseif queryString["menupath"] then
 		local menupath = queryString["menupath"]
-		if fcp:isShowing() then
+		if fcp:showing() then
 			log.df("Triggering Menu Item: %s", menupath)
 			fcp:selectMenu(thawParams({menupath})[1])
 		else

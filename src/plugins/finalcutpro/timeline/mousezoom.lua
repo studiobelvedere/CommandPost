@@ -252,7 +252,7 @@ local function touchCallback(self, touches, time, frame)
 	--------------------------------------------------------------------------------
 	-- Only do stuff if FCPX is active:
 	--------------------------------------------------------------------------------
- 	if not fcp.isFrontmost() or not fcp:timeline():isShowing() then return end
+ 	if not fcp.isFrontmost() or not fcp:timeline():showing() then return end
 
 	--------------------------------------------------------------------------------
 	-- Only allow when ONLY the OPTION modifier key is held down:
@@ -271,7 +271,7 @@ local function touchCallback(self, touches, time, frame)
 	local mouseButtons = eventtap.checkMouseButtons()
 	if next(mouseButtons) then
 		mod.lastPosition = nil
-		if fcp:timeline():toolbar():appearance():isShowing() then
+		if fcp:timeline():toolbar():appearance():showing() then
 			fcp:timeline():toolbar():appearance():hide()
 		end
 		return
@@ -451,7 +451,7 @@ function mod.start()
 		--------------------------------------------------------------------------------
 		local mods = eventtap.checkKeyboardModifiers()
 		local mouseButtons = eventtap.checkMouseButtons()
-		if mods['alt'] and not mods['cmd'] and not mods['shift'] and not mods['ctrl'] and not mods['capslock'] and not mods['fn'] and not next(mouseButtons) and fcp.isFrontmost() and fcp:timeline():isShowing() then
+		if mods['alt'] and not mods['cmd'] and not mods['shift'] and not mods['ctrl'] and not mods['capslock'] and not mods['fn'] and not next(mouseButtons) and fcp.isFrontmost() and fcp:timeline():showing() then
 			mod.altPressed = true
 			if mod.foundMagicMouse then
 				--------------------------------------------------------------------------------
@@ -463,7 +463,7 @@ function mod.start()
 				-- Code to handle MECHANICAL MOUSES (i.e. not Magic Mouse):
 				--------------------------------------------------------------------------------
 				local direction = event:getProperty(eventtap.event.properties.scrollWheelEventDeltaAxis1)
-				if fcp:timeline():isShowing() then
+				if fcp:timeline():showing() then
 					local zoomAmount = fcp:timeline():toolbar():appearance():show():zoomAmount()
 					if mod.scrollDirection == "normal" then
 						if direction >= 1 then
@@ -505,7 +505,7 @@ function mod.start()
 			-- Hide the Appearance Popup:
 			--------------------------------------------------------------------------------
 			local appearance = fcp:timeline():toolbar():appearance()
-			if appearance and appearance:isShowing() then
+			if appearance and appearance:showing() then
 				appearance:hide()
 			end
 

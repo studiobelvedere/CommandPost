@@ -38,7 +38,30 @@ end
 -- TODO: Add documentation
 function TimelineToolbar:new(parent)
 	local o = {_parent = parent}
-	return prop.extend(o, TimelineToolbar)
+	prop.extend(o, TimelineToolbar)
+
+-- TODO: Add documentation
+	o.UI = parent.UI:mutate(function(ui, self)
+		return axutils.childMatching(ui, TimelineToolbar.matches)
+	end):bind(o)
+
+-- TODO: Add documentation
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil
+	end):bind(o)
+
+-- TODO: Add documentation
+-- Contains buttons relating to mouse skimming behaviour:
+	o.skimmingGroupUI = o.UI:mutate(function(ui, self)
+		return axutils.childWithID(ui, id "SkimmingGroup")
+	end):bind(o)
+
+-- TODO: Add documentation
+	o.effectsGroupUI = o.UI:mutate(function(ui, self)
+		return axutils.childWithID(ui, id "EffectsGroup")
+	end):bind(o)
+
+	return o
 end
 
 -- TODO: Add documentation
@@ -51,39 +74,6 @@ function TimelineToolbar:app()
 	return self:parent():app()
 end
 
------------------------------------------------------------------------
---
--- TIMELINE UI:
---
------------------------------------------------------------------------
-
--- TODO: Add documentation
-function TimelineToolbar:UI()
-	return axutils.cache(self, "_ui", function()
-		return axutils.childMatching(self:parent():UI(), TimelineToolbar.matches)
-	end,
-	TimelineToolbar.matches)
-end
-
--- TODO: Add documentation
-TimelineToolbar.isShowing = prop.new(function(self)
-	return self:UI() ~= nil
-end):bind(TimelineToolbar)
-
--- TODO: Add documentation
--- Contains buttons relating to mouse skimming behaviour:
-function TimelineToolbar:skimmingGroupUI()
-	return axutils.cache(self, "_skimmingGroup", function()
-		return axutils.childWithID(self:UI(), id "SkimmingGroup")
-	end)
-end
-
--- TODO: Add documentation
-function TimelineToolbar:effectsGroupUI()
-	return axutils.cache(self, "_effectsGroup", function()
-		return axutils.childWithID(self:UI(), id "EffectsGroup")
-	end)
-end
 
 -----------------------------------------------------------------------
 --

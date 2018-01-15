@@ -86,7 +86,7 @@ function mod.apply(action)
 	-- Get Effects Browser:
 	--------------------------------------------------------------------------------
 	local effects = fcp:effects()
-	local effectsShowing = effects:isShowing()
+	local effectsShowing = effects:showing()
 	local effectsLayout = effects:saveLayout()
 
 	--------------------------------------------------------------------------------
@@ -144,7 +144,7 @@ function mod.apply(action)
 	effects:applyItem(effect)
 
 	-- TODO: HACK: This timer exists to  work around a mouse bug in Hammerspoon Sierra
-	timer.doAfter(0.1, function()		
+	timer.doAfter(0.1, function()
 		effects:loadLayout(effectsLayout)
 		if transitionsLayout then transitions:loadLayout(transitionsLayout) end
 		if not effectsShowing then effects:hide() end

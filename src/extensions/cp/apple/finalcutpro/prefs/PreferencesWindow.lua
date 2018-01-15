@@ -43,7 +43,33 @@ end
 -- TODO: Add documentation
 function PreferencesWindow:new(app)
 	local o = {_app = app}
-	return prop.extend(o, PreferencesWindow)
+	prop.extend(o, PreferencesWindow)
+
+-- TODO: Add documentation
+	o.UI = app.windowsUI:mutate(function(windowsUI, self)
+		return windowsUI and self._findWindowUI(windowsUI)
+	end):bind(o)
+
+-- TODO: Add documentation
+-- Returns the UI for the AXToolbar containing this panel's buttons
+	o.toolbarUI = o.UI:mutate(function(ui, self)
+		return ui and axutils.childWith(ui, "AXRole", "AXToolbar") or nil
+	end):bind(o)
+
+-- TODO: Add documentation
+-- Returns the UI for the AXGroup containing this panel's elements
+	o.groupUI = o.UI:mutate(function(ui, self)
+		local group = ui and axutils.childWithRole(ui, "AXGroup")
+		-- The group conains another single group that contains the actual checkboxes, etc.
+		return group and #group == 1 and group[1]
+	end):bind(o)
+
+-- TODO: Add documentation
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil
+	end):bind(o)
+
+	return o
 end
 
 -- TODO: Add documentation
@@ -52,36 +78,8 @@ function PreferencesWindow:app()
 end
 
 -- TODO: Add documentation
-function PreferencesWindow:UI()
-	return axutils.cache(self, "_ui", function()
-		local windowsUI = self:app():windowsUI()
-		return windowsUI and self:_findWindowUI(windowsUI)
-	end)
-end
-
--- TODO: Add documentation
-function PreferencesWindow:_findWindowUI(windows)
+function PreferencesWindow._findWindowUI(windows)
 	return axutils.childMatching(windows, PreferencesWindow.matches)
-end
-
--- TODO: Add documentation
--- Returns the UI for the AXToolbar containing this panel's buttons
-function PreferencesWindow:toolbarUI()
-	return axutils.cache(self, "_toolbar", function()
-		local ax = self:UI()
-		return ax and axutils.childWith(ax, "AXRole", "AXToolbar") or nil
-	end)
-end
-
--- TODO: Add documentation
--- Returns the UI for the AXGroup containing this panel's elements
-function PreferencesWindow:groupUI()
-	return axutils.cache(self, "_group", function()
-		local ui = self:UI()
-		local group = ui and axutils.childWithRole(ui, "AXGroup")
-		-- The group conains another single group that contains the actual checkboxes, etc.
-		return group and #group == 1 and group[1]
-	end)
 end
 
 -- TODO: Add documentation
@@ -101,14 +99,9 @@ function PreferencesWindow:importPanel()
 end
 
 -- TODO: Add documentation
-PreferencesWindow.isShowing = prop.new(function(self)
-	return self:UI() ~= nil
-end):bind(PreferencesWindow)
-
--- TODO: Add documentation
 -- Ensures the PreferencesWindow is showing
 function PreferencesWindow:show()
-	if not self:isShowing() then
+	if not self:showing() then
 		-- open the window
 		if self:app():menuBar():isEnabled({"Final Cut Pro", "Preferences…"}) then
 			self:app():menuBar():selectMenu({"Final Cut Pro", "Preferences…"})
@@ -127,7 +120,7 @@ function PreferencesWindow:hide()
 		if closeBtn then
 			closeBtn:doPress()
 			-- wait for it to close
-			just.doWhile(function() return self:isShowing() end, 5)
+			just.doWhile(function() return self:showing() end, 5)
 		end
 	end
 	return self

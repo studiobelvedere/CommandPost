@@ -14,6 +14,8 @@
 --
 --------------------------------------------------------------------------------
 local axutils							= require("cp.ui.axutils")
+local prop								= require("cp.prop")
+
 local log								= require("hs.logger").new("ScrollArea")
 
 --------------------------------------------------------------------------------
@@ -31,8 +33,50 @@ end
 -- TODO: Add documentation
 function ScrollArea:new(parent, finderFn)
 	local o = {_parent = parent, _finder = finderFn}
-	setmetatable(o, self)
-	self.__index = self
+	prop.extend(o, ScrollArea)
+
+-- TODO: Add documentation
+	o.UI = prop(function(self)
+		local ui = self._finder()
+		return axutils.isValid(ui) and ScrollArea.matches(ui) and ui or nil
+	end):bind(o):monitor(parent.UI)
+
+-- TODO: Add documentation
+	o.verticalScrollBarUI = o.UI:mutate(function(ui, self)
+		return ui and ui:attributeValue("AXVerticalScrollBar")
+	end):bind(o)
+
+-- TODO: Add documentation
+	o.horizontalScrollBarUI = o.UI:mutate(function(ui, self)
+		return ui and ui:attributeValue("AXHorizontalScrollBar")
+	end):bind(o)
+
+-- TODO: Add documentation
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil
+	end):bind(o)
+
+-- TODO: Add documentation
+	o.contentsUI = o.UI:mutate(function(ui, self)
+		if ui then
+			local role = ui:attributeValue("AXRole")
+			if role and role == "AXScrollArea" then
+				return ui:contents()[1]
+			else
+				--log.ef("Expected AXScrollArea, but got %s. Returning 'nil'.", role)
+				return nil
+			end
+		else
+			--log.ef("Failed to get ScrollArea:contentsUI(). Returning 'nil'.")
+			return nil
+		end
+	end):bind(o)
+
+-- TODO: Add documentation
+	o.selectedChildrenUI = o.contentsUI:mutate(function(ui, self)
+		return ui and ui:selectedChildren()
+	end):bind(o)
+
 	return o
 end
 
@@ -51,48 +95,6 @@ end
 -- CONTENT UI:
 --
 -----------------------------------------------------------------------
-
--- TODO: Add documentation
-function ScrollArea:UI()
-	return axutils.cache(self, "_ui", function()
-		return self._finder()
-	end,
-	ScrollArea.matches)
-end
-
--- TODO: Add documentation
-function ScrollArea:verticalScrollBarUI()
-	local ui = self:UI()
-	return ui and ui:attributeValue("AXVerticalScrollBar")
-end
-
--- TODO: Add documentation
-function ScrollArea:horizontalScrollBarUI()
-	local ui = self:UI()
-	return ui and ui:attributeValue("AXHorizontalScrollBar")
-end
-
--- TODO: Add documentation
-function ScrollArea:isShowing()
-	return self:UI() ~= nil
-end
-
--- TODO: Add documentation
-function ScrollArea:contentsUI()
-	local ui = self:UI()
-	if ui then
-		local role = ui:attributeValue("AXRole")
-		if role and role == "AXScrollArea" then
-			return ui:contents()[1]
-		else
-			--log.ef("Expected AXScrollArea, but got %s. Returning 'nil'.", role)
-			return nil
-		end
-	else
-		--log.ef("Failed to get ScrollArea:contentsUI(). Returning 'nil'.")
-		return nil
-	end
-end
 
 -- TODO: Add documentation
 function ScrollArea:childrenUI(filterFn)
@@ -126,12 +128,6 @@ function ScrollArea:childrenUI(filterFn)
 		end
 	end
 	return nil
-end
-
--- TODO: Add documentation
-function ScrollArea:selectedChildrenUI()
-	local ui = self:contentsUI()
-	return ui and ui:selectedChildren()
 end
 
 -- TODO: Add documentation

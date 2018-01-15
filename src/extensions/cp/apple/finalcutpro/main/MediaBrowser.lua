@@ -49,7 +49,29 @@ MediaBrowser.SOUND_EFFECTS = 4
 -- TODO: Add documentation
 function MediaBrowser:new(parent)
 	local o = {_parent = parent}
-	return prop.extend(o, MediaBrowser)
+	prop.extend(o, MediaBrowser)
+
+--- cp.apple.finalcutpro.main.MediaBrowser.UI <cp.prop: axuielement; read-only>
+--- Field
+--- The UI element for the Media Browser, or `nil`.
+	o.UI = parent.UI:mutate(function(ui, self)
+		return self:showing() and ui or nil
+	end):bind(o)
+
+
+--- cp.apple.finalcutpro.main.MediaBrowser.mainGroupUI <cp.prop: axuielement; read-only>
+--- Field
+--- The UI element for the main group in the browser.
+	o.mainGroupUI = o.UI:mutate(function(ui, self)
+		return axutils.isValid(ui) and axutils.childWithRole(ui, "AXSplitGroup")
+	end):bind(o)
+
+--- cp.apple.finalcutpro.main.MediaBrowser.showing <cp.prop: boolean; read-only>
+--- Field
+--- If `true`, the browser is showing.
+	o.showing = parent.showing:AND(parent:showMedia().checked):bind(o)
+
+	return o
 end
 
 -- TODO: Add documentation
@@ -69,27 +91,11 @@ end
 -----------------------------------------------------------------------
 
 -- TODO: Add documentation
-function MediaBrowser:UI()
-	if self:isShowing() then
-		return axutils.cache(self, "_ui", function()
-			return self:parent():UI()
-		end)
-	end
-	return nil
-end
-
--- TODO: Add documentation
-MediaBrowser.isShowing = prop.new(function(self)
-	local parent = self:parent()
-	return parent:isShowing() and parent:showMedia():isChecked()
-end):bind(MediaBrowser)
-
--- TODO: Add documentation
 function MediaBrowser:show()
 	local menuBar = self:app():menuBar()
 	-- Go there direct
 	menuBar:selectMenu({"Window", "Go To", MediaBrowser.TITLE})
-	just.doUntil(function() return self:isShowing() end)
+	just.doUntil(function() return self:showing() end)
 	return self
 end
 
@@ -106,20 +112,11 @@ end
 -----------------------------------------------------------------------------
 
 -- TODO: Add documentation
-function MediaBrowser:mainGroupUI()
-	return axutils.cache(self, "_mainGroup",
-	function()
-		local ui = self:UI()
-		return ui and axutils.childWithRole(ui, "AXSplitGroup")
-	end)
-end
-
--- TODO: Add documentation
 function MediaBrowser:sidebar()
 	if not self._sidebar then
 		self._sidebar = Table.new(self, function()
 			return axutils.childWithID(self:mainGroupUI(), id "Sidebar")
-		end)
+		end):uncached()
 	end
 	return self._sidebar
 end
@@ -189,7 +186,7 @@ end
 -- TODO: Add documentation
 function MediaBrowser:saveLayout()
 	local layout = {}
-	if self:isShowing() then
+	if self:showing() then
 		layout.showing = true
 		layout.sidebar = self:sidebar():saveLayout()
 		layout.search = self:search():saveLayout()

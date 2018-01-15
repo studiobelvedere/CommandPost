@@ -45,15 +45,54 @@ GeneratorsBrowser.TITLE = "Titles and Generators"
 -- TODO: Add documentation
 function GeneratorsBrowser:new(parent)
 	local o = {_parent = parent}
-	return prop.extend(o, GeneratorsBrowser)
+	prop.extend(o, GeneratorsBrowser)
+
+--- cp.apple.finalcutpro.main.GeneratorsBrowser.showing <cp.prop: boolean; read-only>
+--- Field
+--- If `true`, the browser is showing.
+	o.showing = parent.showing:AND(parent:showGenerators().checked):bind(o)
+	o.isShowing = o.showing
+
+--- cp.apple.finalcutpro.main.GeneratorsBrowser.UI <cp.prop: axuielement; read-only>
+--- Field
+--- The UI element for the Generators Browser.
+	o.UI = parent.UI:mutate(function(ui, self)
+		return self:showing() and ui or nil
+	end):bind(o)
+
+
+--- cp.apple.finalcutpro.main.GeneratorsBrowser.mainGroupUI <cp.prop: axuilelemtn; read-only>
+--- Field
+--- The UI element for the main group within the browser.
+	o.mainGroupUI = o.UI:mutate(function(ui, self)
+		return ui and axutils.childWithRole(ui, "AXSplitGroup")
+	end):bind(o)
+
+	return o
 end
 
--- TODO: Add documentation
+--- cp.apple.finalcutpro.main.GeneratorsBrowser:parent() -> table
+--- Method
+--- Returns the parent object.
+---
+--- Parameters:
+--- * None
+---
+--- Returns:
+--- * The parent.
 function GeneratorsBrowser:parent()
 	return self._parent
 end
 
--- TODO: Add documentation
+--- cp.apple.finalcutpro.main.GeneratorsBrowser:app() -> table
+--- Method
+--- Returns the app.
+---
+--- Parameters:
+--- * None
+---
+--- Returns:
+--- * The app.
 function GeneratorsBrowser:app()
 	return self:parent():app()
 end
@@ -64,35 +103,35 @@ end
 --
 -----------------------------------------------------------------------
 
--- TODO: Add documentation
-function GeneratorsBrowser:UI()
-	if self:isShowing() then
-		return axutils.cache(self, "_ui", function()
-			return self:parent():UI()
-		end)
-	end
-	return nil
-end
-
--- TODO: Add documentation
-GeneratorsBrowser.isShowing = prop.new(function(self)
-	local parent = self:parent()
-	return parent:isShowing() and parent:showGenerators():isChecked()
-end):bind(GeneratorsBrowser)
-
--- TODO: Add documentation
+--- cp.apple.finalcutpro.main.GeneratorsBrowser:show() -> self
+--- Method
+--- Shows the generators browser, if possible.
+---
+--- Parameters:
+--- * None
+---
+--- Generators:
+--- * The Generators Browser instance.
 function GeneratorsBrowser:show()
 	local menuBar = self:app():menuBar()
 	-- Go there direct
 	menuBar:selectMenu({"Window", "Go To", GeneratorsBrowser.TITLE})
-	just.doUntil(function() return self:isShowing() end)
+	just.doUntil(function() return self:showing() end)
 	return self
 end
 
--- TODO: Add documentation
+--- cp.apple.finalcutpro.main.GeneratorsBrowser:hide() -> self
+--- Method
+--- Hides the Generators Browser, if showing.
+---
+--- Parameters:
+--- * None
+---
+--- Returns:
+--- * The Generators Browser instance.
 function GeneratorsBrowser:hide()
 	self:parent():hide()
-	just.doWhile(function() return self:isShowing() end)
+	just.doWhile(function() return self:showing() end)
 	return self
 end
 
@@ -101,15 +140,6 @@ end
 -- SECTIONS:
 --
 -----------------------------------------------------------------------------
-
--- TODO: Add documentation
-function GeneratorsBrowser:mainGroupUI()
-	return axutils.cache(self, "_mainGroup",
-	function()
-		local ui = self:UI()
-		return ui and axutils.childWithRole(ui, "AXSplitGroup")
-	end)
-end
 
 -- TODO: Add documentation
 function GeneratorsBrowser:sidebar()
@@ -164,7 +194,7 @@ end
 --- Returns:
 --- * The Generators Browser.
 function GeneratorsBrowser:showSidebar()
-	if not self:sidebar():isShowing() then
+	if not self:sidebar():showing() then
 		self:app():menuBar():checkMenu({"Window", "Show in Workspace", 1})
 	end
 end
@@ -332,7 +362,7 @@ end
 -- TODO: Add documentation
 function GeneratorsBrowser:saveLayout()
 	local layout = {}
-	if self:isShowing() then
+	if self:showing() then
 		layout.showing = true
 		layout.sidebar = self:sidebar():saveLayout()
 		layout.contents = self:contents():saveLayout()

@@ -48,12 +48,12 @@ local mod = {}
 --
 -- Returns:
 --  * `true` if successful otherwise `false`
-local function selectShare(destinationPreset)	
+local function selectShare(destinationPreset)
 	return fcp:menuBar():selectMenu({"File", "Share", function(menuItem)
 		if destinationPreset == nil then
 			return menuItem:attributeValue("AXMenuItemCmdChar") ~= nil
 		else
-			local title = menuItem:attributeValue("AXTitle")						
+			local title = menuItem:attributeValue("AXTitle")
 			return title and string.find(title, destinationPreset, 1, true) ~= nil
 		end
 	end})
@@ -164,26 +164,26 @@ local function batchExportClips(libraries, clips, exportPath, destinationPreset,
 		-- Wait for Export Dialog to open:
 		--------------------------------------------------------------------------------
 		local exportDialog = fcp:exportDialog()
-		if not just.doUntil(function() return exportDialog:isShowing() end) then
-		
+		if not just.doUntil(function() return exportDialog:showing() end) then
+
 			--------------------------------------------------------------------------------
 			-- "...has missing or offline titles, effects or generators."
 			--------------------------------------------------------------------------------
 			local triggerError = true
 			local windowUIs = fcp:windowsUI()
-			if windowUIs then 
+			if windowUIs then
 				for _, windowUI in pairs(windowUIs) do
-					local sheets = axutils.childrenWithRole(windowUI, "AXSheet")					
-					if sheets then 
+					local sheets = axutils.childrenWithRole(windowUI, "AXSheet")
+					if sheets then
 						for _, sheet in pairs(sheets) do
-							if axutils.childWithID(sheet, "_NS:76") and axutils.childWithID(sheet, "_NS:9") then							
-								if mod.ignoreMissingEffects() then					
+							if axutils.childWithID(sheet, "_NS:76") and axutils.childWithID(sheet, "_NS:9") then
+								if mod.ignoreMissingEffects() then
 									--------------------------------------------------------------------------------
 									-- Press the 'Continue' button:
-									--------------------------------------------------------------------------------			
+									--------------------------------------------------------------------------------
 									local continueButton = axutils.childWithID(sheet, "_NS:9")
 									local result = continueButton:performAction("AXPress")
-									if result ~= nil then 
+									if result ~= nil then
 										triggerError = false
 									end
 								else
@@ -194,12 +194,12 @@ local function batchExportClips(libraries, clips, exportPath, destinationPreset,
 						end
 					end
 				end
-			end						
-			if triggerError then 
+			end
+			if triggerError then
 				dialog.displayErrorMessage("Failed to open the 'Export' window." .. errorFunction)
 				return false
 			end
-			
+
 		end
 		exportDialog:pressNext()
 
@@ -207,12 +207,12 @@ local function batchExportClips(libraries, clips, exportPath, destinationPreset,
 		-- If 'Next' has been clicked (as opposed to 'Share'):
 		--------------------------------------------------------------------------------
 		local saveSheet = exportDialog:saveSheet()
-		if exportDialog:isShowing() then
+		if exportDialog:showing() then
 
 			--------------------------------------------------------------------------------
 			-- Click 'Save' on the save sheet:
 			--------------------------------------------------------------------------------
-			if not just.doUntil(function() return saveSheet:isShowing() end) then
+			if not just.doUntil(function() return saveSheet:showing() end) then
 				dialog.displayErrorMessage("Failed to open the 'Save' window." .. errorFunction)
 				return false
 			end
@@ -231,9 +231,9 @@ local function batchExportClips(libraries, clips, exportPath, destinationPreset,
 		--------------------------------------------------------------------------------
 		-- Make sure Save Window is closed:
 		--------------------------------------------------------------------------------
-		while saveSheet:isShowing() do
+		while saveSheet:showing() do
 			local replaceAlert = saveSheet:replaceAlert()
-			if replaceExisting and replaceAlert:isShowing() then
+			if replaceExisting and replaceAlert:showing() then
 				replaceAlert:pressReplace()
 			else
 				replaceAlert:pressCancel()
@@ -391,7 +391,7 @@ function mod.batchExport()
 
 	local libraries = fcp:browser():libraries()
 
-	if not libraries:isShowing() then
+	if not libraries:showing() then
 		dialog.displayErrorMessage(i18n("batchExportEnableBrowser"))
 		return false
 	end

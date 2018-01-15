@@ -46,7 +46,20 @@ end
 -- TODO: Add documentation
 function ExportDialog:new(app)
 	local o = {_app = app}
-	return prop.extend(o, ExportDialog)
+	prop.extend(o, ExportDialog)
+
+	o.UI = app.windowsUI:mutate(function(windowsUI, self)
+		return windowsUI and self._findWindowUI(windowsUI)
+	end):bind(o)
+
+--- cp.apple.finalcutpro.export.ExportDialog.showing <cp.prop: boolean; read-only>
+--- Field
+--- Is the window showing?
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil
+	end):bind(o)
+
+	return o
 end
 
 -- TODO: Add documentation
@@ -55,32 +68,16 @@ function ExportDialog:app()
 end
 
 -- TODO: Add documentation
-function ExportDialog:UI()
-	return axutils.cache(self, "_ui", function()
-		local windowsUI = self:app():windowsUI()
-		return windowsUI and self:_findWindowUI(windowsUI)
-	end,
-	ExportDialog.matches)
-end
-
--- TODO: Add documentation
-function ExportDialog:_findWindowUI(windows)
+function ExportDialog._findWindowUI(windows)
 	for i,window in ipairs(windows) do
 		if ExportDialog.matches(window) then return window end
 	end
 	return nil
 end
 
---- cp.apple.finalcutpro.export.ExportDialog.isShowing <cp.prop: boolean; read-only>
---- Field
---- Is the window showing?
-ExportDialog.isShowing = prop.new(function(self)
-	return self:UI() ~= nil
-end):bind(ExportDialog)
-
 -- Ensures the ExportDialog is showing
 function ExportDialog:show()
-	if not self:isShowing() then
+	if not self:showing() then
 		-- open the window
 		if self:app():menuBar():isEnabled({"File", "Share", 1}) then
 			self:app():menuBar():selectMenu({"File", "Share", 1})
@@ -93,6 +90,7 @@ end
 -- TODO: Add documentation
 function ExportDialog:hide()
 	self:pressCancel()
+	return self
 end
 
 -- TODO: Add documentation

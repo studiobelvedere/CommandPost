@@ -67,7 +67,32 @@ end
 --- * The new `Playhead` instance.
 function Playhead:new(parent, skimming, containerFn)
 	local o = {_parent = parent, _skimming = skimming, containerUI = containerFn}
-	return prop.extend(o, Playhead)
+	prop.extend(o, Playhead)
+
+-- TODO: Add documentation
+	o.UI = prop(function(self)
+		local ui = self.containerUI and self:containerUI() or self:parent():UI()
+		return Playhead.find(ui, self:isSkimming())
+	end):bind(o)
+
+-- TODO: Add documentation
+	o.persistent = prop.new(function(self)
+		return not self._skimming
+	end):bind(o)
+	o.isPersistent = o.persistent
+
+-- TODO: Add documentation
+	o.skimming = prop.new(function(self)
+		return self._skimming == true
+	end):bind(o)
+	o.isSkimming = o.skimming
+
+-- TODO: Add documentation
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil
+	end):bind(o)
+
+	return o
 end
 
 -- TODO: Add documentation
@@ -87,34 +112,10 @@ end
 -----------------------------------------------------------------------
 
 -- TODO: Add documentation
-function Playhead:UI()
-	return axutils.cache(self, "_ui", function()
-		local ui = self.containerUI and self:containerUI() or self:parent():UI()
-		return Playhead.find(ui, self:isSkimming())
-	end,
-	Playhead.matches)
-end
-
--- TODO: Add documentation
-Playhead.isPersistent = prop.new(function(self)
-	return not self._skimming
-end):bind(Playhead)
-
--- TODO: Add documentation
-Playhead.isSkimming = prop.new(function(self)
-	return self._skimming == true
-end):bind(Playhead)
-
--- TODO: Add documentation
-Playhead.isShowing = prop.new(function(self)
-	return self:UI() ~= nil
-end):bind(Playhead)
-
--- TODO: Add documentation
 function Playhead:show()
 	local parent = self:parent()
 	-- show the parent.
-	if parent:show():isShowing() then
+	if parent:show():showing() then
 		-- ensure the playhead is visible
 		if parent.viewFrame then
 			local viewFrame = parent:viewFrame()

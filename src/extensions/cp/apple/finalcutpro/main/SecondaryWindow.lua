@@ -21,6 +21,7 @@ local just							= require("cp.just")
 local prop							= require("cp.prop")
 
 local Button						= require("cp.ui.Button")
+local Window						= require("cp.ui.Window")
 local WindowWatcher					= require("cp.apple.finalcutpro.WindowWatcher")
 
 --------------------------------------------------------------------------------
@@ -30,7 +31,15 @@ local WindowWatcher					= require("cp.apple.finalcutpro.WindowWatcher")
 --------------------------------------------------------------------------------
 local SecondaryWindow = {}
 
--- TODO: Add documentation
+--- cp.apple.finalcutpro.main.SecondaryWindow.matches(element) -> boolean
+--- Function
+--- Checks if the provided `axuielement` matches the SecondaryWindow.
+---
+--- Parameters:
+--- * element	- The element to check.
+---
+--- Returns:
+--- * `true` if the element is the Secondary Window.
 function SecondaryWindow.matches(element)
 	if element and element:attributeValue("AXModal") == false then
 		local children = element:attributeValue("AXChildren")
@@ -46,163 +55,113 @@ function SecondaryWindow:new(app)
 	}
 	prop.extend(o, SecondaryWindow)
 
-	o:watch({
-		show	= function() o.isShowing:update() end,
-		hide	= function() o.isShowing:update() end,
-		open	= function() o.isShowing:update() end,
-		close	= function() o.isShowing:update() end,
-		move	= function() o.frame:update() end,
-	})
+	local window = Window:new(function()
+		return axutils.childMatching(app:windowsUI(), SecondaryWindow.matches)
+	end)
+	o._window = window
+
+	-- update whenever the application changes.
+	window.UI:monitor(app.application)
+
+--- cp.apple.finalcutpro.main.SecondaryWindow.UI <cp.prop: axuielement; read-only>
+--- Field
+--- The `axuielement` for the window.
+	o.UI = window.UI:wrap(o)
+
+--- cp.apple.finalcutpro.main.SecondaryWindow.showing <cp.prop: boolean>
+--- Field
+--- Is `true` if the window is visible.
+	o.showing = window.visible:wrap(o)
+
+--- cp.apple.finalcutpro.main.SecondaryWindow.fullScreen <cp.prop: boolean>
+--- Field
+--- Is `true` if the window is full-screen.
+	o.fullScreen = window.fullScreen:wrap(o)
+
+--- cp.apple.finalcutpro.main.SecondaryWindow.frame <cp.prop: frame>
+--- Field
+--- The current position (x, y, width, height) of the window.
+	o.frame = window.frame:wrap(o)
+
+--- cp.apple.finalcutpro.main.SecondaryWindow.window <cp.prop: hs.window; read-only>
+--- Field
+--- The `hs.window` object for the Secondary Window, if present.
+	o.window = window.hsWindow:wrap(o)
+
+--- cp.apple.finalcutpro.main.SecondaryWindow.rootGroupUI <cp.prop: axuielement; read-only>
+--- Field
+--- The root group UI element.
+	o.rootGroupUI = o.UI:mutate(function(ui, self)
+		return ui and axutils.childWithRole(ui, "AXSplitGroup")
+	end):bind(o)
+
+--- cp.apple.finalcutpro.main.SecondaryWindow.viewerGroupUI <cp.prop: axuielement; read-only>
+--- Field
+--- The viewer group UI element.
+	o.viewerGroupUI = o.rootGroupUI
+
+--- cp.apple.finalcutpro.main.SecondaryWindow.timelineGroupUI <cp.prop: axuielement; read-only>
+--- Field
+--- The timeline group UI.
+	o.timelineGroupUI = o.rootGroupUI:mutate(function(root, self)
+		-- for some reason, the Timeline is burried under three levels
+		if root and root[1] and root[1][1] then
+			return root[1][1]
+		end
+	end):bind(o)
+
+--- cp.apple.finalcutpro.main.SecondaryWindow.browserGroupUI <cp.prop: axuielement; read-only>
+--- Field
+--- The browser group UI.
+	o.browserGroupUI = o.rootGroupUI
 
 	return o
 end
 
--- TODO: Add documentation
+--- cp.apple.finalcutpro.main.SecondaryWindow:app() -> app
+--- Method
+--- Provides the main app the window belongs to.
+---
+--- Parameters:
+--- * None
+---
+--- Returns:
+--- * The app.
 function SecondaryWindow:app()
 	return self._app
 end
 
--- TODO: Add documentation
-SecondaryWindow.isShowing = prop.new(function(self)
-	local ui = self:UI()
-	return ui ~= nil and ui:asHSWindow():isVisible()
-end):bind(SecondaryWindow)
-
--- TODO: Add documentation
-SecondaryWindow.isFullScreen = prop.new(function(self)
-	local ui = self:rootGroupUI()
-	if ui then
-		-- In full-screen, it can either be a single group, or a sub-group containing the event viewer.
-		local group = nil
-		if #ui == 1 then
-			group = ui[1]
-		else
-			group = axutils.childMatching(ui, function(element) return #element == 2 end)
-		end
-		if #group == 2 then
-			local image = axutils.childWithRole(group, "AXImage")
-			return image ~= nil
-		end
-	end
-	return false
-end):bind(SecondaryWindow)
-
--- TODO: Add documentation
+--- cp.apple.finalcutpro.main.SecondaryWindow:show() -> boolean
+--- Method
+--- Shows the secondary window. Currently this does nothing.
+---
+--- Parameters:
+--- * None
+---
+--- Returns:
+--- * `true`
+---
+--- Notes:
+--- * Currently, there is no way to activate the secondary window without specifying which thing to move there.
 function SecondaryWindow:show()
 	-- Currently a null-op. Determin if there are any scenarios where we need to force this.
 	return true
 end
 
--- TODO: Add documentation
-function SecondaryWindow:UI()
-	return axutils.cache(self, "_ui", function()
-		local ui = self:app():UI()
-		if ui then
-			if SecondaryWindow.matches(ui:mainWindow()) then
-				return ui:mainWindow()
-			else
-				local windowsUI = self:app():windowsUI()
-				return windowsUI and self:_findWindowUI(windowsUI)
-			end
-		end
-		return nil
-	end,
-	SecondaryWindow.matches)
-end
-
-function SecondaryWindow:window()
-	local ui = self:UI()
-	return ui and ui:asHSWindow()
-end
-
--- TODO: Add documentation
+-- cp.apple.finalcutpro.main.SecondaryWindow:_findWindowUI(windows)  -> axuielement
+-- Method
+-- Picks the Secondary Window from the table of windows, if present.
+--
+-- Parameters:
+-- * windows	- The table of windows to check
+--
+-- Returns:
+-- * The window, or `nil`.
 function SecondaryWindow:_findWindowUI(windows)
 	for i,w in ipairs(windows) do
 		if SecondaryWindow.matches(w) then return w end
 	end
 	return nil
-end
-
--- TODO: Add documentation
-function SecondaryWindow:setFullScreen(isFullScreen)
-	local ui = self:UI()
-	if ui then ui:setFullScreen(isFullScreen) end
-	return self
-end
-
--- TODO: Add documentation
-function SecondaryWindow:toggleFullScreen()
-	local ui = self:UI()
-	if ui then ui:setFullScreen(not self:isFullScreen()) end
-	return self
-end
-
---- cp.apple.finalcutpro.main.SecondaryWindow.frame <cp.prop: frame>
---- Field
---- The current position (x, y, width, height) of the window.
-SecondaryWindow.frame = prop(
-	function(self)
-		local ui = self:UI()
-		return ui and ui:frame()
-	end,
-	function(frame, self)
-		local ui = self:UI()
-		if ui then ui:setAttributeValue("AXFrame", frame) end
-	end
-):bind(SecondaryWindow)
-
------------------------------------------------------------------------
---
--- UI STRUCTURE:
---
------------------------------------------------------------------------
-
--- TODO: Add documentation
--- The top AXSplitGroup contains the
-function SecondaryWindow:rootGroupUI()
-	return axutils.cache(self, "_rootGroup", function()
-		local ui = self:UI()
-		return ui and axutils.childWithRole(ui, "AXSplitGroup")
-	end)
-end
-
------------------------------------------------------------------------
---
--- VIEWER UI:
---
------------------------------------------------------------------------
-
--- TODO: Add documentation
-function SecondaryWindow:viewerGroupUI()
-	return self:rootGroupUI()
-end
-
------------------------------------------------------------------------
---
--- TIMELINE UI:
---
------------------------------------------------------------------------
-
--- TODO: Add documentation
-function SecondaryWindow:timelineGroupUI()
-	return axutils.cache(self, "_timelineGroup", function()
-		-- for some reason, the Timeline is burried under three levels
-		local root = self:rootGroupUI()
-		if root and root[1] and root[1][1] then
-			return root[1][1]
-		end
-	end)
-end
-
------------------------------------------------------------------------
---
--- BROWSER:
---
------------------------------------------------------------------------
-
--- TODO: Add documentation
-function SecondaryWindow:browserGroupUI()
-	return self:rootGroupUI()
 end
 
 -----------------------------------------------------------------------
@@ -230,7 +189,7 @@ function SecondaryWindow:watch(events)
 		self._watcher = WindowWatcher:new(self)
 	end
 
-	self._watcher:watch(events)
+	return self._watcher:watch(events)
 end
 
 -- TODO: Add documentation

@@ -223,7 +223,7 @@ end
 -- Returns:
 --  * None
 local function update()
-	if fcp:isRunning() and fcp:isFrontmost() and fcp:colorBoard():isShowing() then
+	if fcp:isRunning() and fcp:isFrontmost() and fcp:colorBoard():showing() then
 		for i, v in pairs(mod._updateCallbacks) do
 			v()
 		end
@@ -419,7 +419,7 @@ local function puckWidget(id, aspect, property)
 			--------------------------------------------------------------------------------
 			-- Show the Color Board if it's hidden:
 			--------------------------------------------------------------------------------
-			if not colorBoard:isShowing() then
+			if not colorBoard:showing() then
 				colorBoard:show()
 			end
 

@@ -14,6 +14,7 @@
 --
 --------------------------------------------------------------------------------
 local axutils						= require("cp.ui.axutils")
+local prop							= require("cp.prop")
 
 --------------------------------------------------------------------------------
 --
@@ -32,8 +33,37 @@ end
 --- Creates a new TextField
 function TextField:new(parent, finderFn)
 	local o = {_parent = parent, _finder = finderFn}
-	setmetatable(o, self)
-	self.__index = self
+	prop.extend(o, TextField)
+
+-- TODO: Add documentation
+	o.UI = prop(function(self)
+		local ui = self._finder()
+		return axutils.isValid(ui) and TextField.matches(ui) and ui or nil
+	end):bind(o)
+
+-- TODO: Add documentation
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil and self:parent():showing()
+	end):bind(o):monitor(parent.showing)
+
+	o.value = o.UI:mutate(
+		function(ui, self)
+			return ui and ui:attributeValue("AXValue")
+		end,
+		function(ui, value, self)
+			if ui then
+				ui:setAttributeValue("AXValue", value)
+				ui:performAction("AXConfirm")
+			end
+		end
+	):bind(o)
+
+-- TODO: Add documentation
+	o.enabled = o.UI:mutate(function(ui, self)
+		return ui and ui:enabled()
+	end):bind(o)
+	o.isEnabled = o.enabled
+
 	return o
 end
 
@@ -43,43 +73,19 @@ function TextField:parent()
 end
 
 -- TODO: Add documentation
-function TextField:UI()
-	return axutils.cache(self, "_ui", function()
-		return self._finder()
-	end,
-	TextField.matches)
-end
-
--- TODO: Add documentation
-function TextField:isShowing()
-	return self:UI() ~= nil and self:parent():isShowing()
-end
-
--- TODO: Add documentation
 function TextField:getValue()
-	local ui = self:UI()
-	return ui and ui:attributeValue("AXValue")
+	return self:value()
 end
 
 -- TODO: Add documentation
 function TextField:setValue(value)
-	local ui = self:UI()
-	if ui then
-		ui:setAttributeValue("AXValue", value)
-		ui:performAction("AXConfirm")
-	end
+	self.value:set(value)
 	return self
 end
 
 -- TODO: Add documentation
 function TextField:clear()
-	self:setValue("")
-end
-
--- TODO: Add documentation
-function TextField:isEnabled()
-	local ui = self:UI()
-	return ui and ui:enabled()
+	self.value:set("")
 end
 
 -- TODO: Add documentation

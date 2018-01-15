@@ -34,16 +34,68 @@ local CheckBox							= require("cp.ui.CheckBox")
 --------------------------------------------------------------------------------
 local Browser = {}
 
--- TODO: Add documentation
+--- cp.apple.finalcutpro.main.Browser.matches(element) -> boolean
+--- Function
+--- Checks if the element provided is the Browser.
+---
+--- Parameters:
+--- * element	- The element to check
+---
+--- Returns:
+--- * `true` if the element matches.
 function Browser.matches(element)
 	local checkBoxes = axutils.childrenWithRole(element, "AXCheckBox")
 	return checkBoxes and #checkBoxes >= 3
 end
 
--- TODO: Add documentation
+--- cp.apple.finalcutpro.main.Browser:new(app) -> Browser
+--- Method
+--- Creates a new instance of a `Browser`, linked to the specified App instance.
+---
+--- Parameters:
+--- * app	- The app to link to.
+---
+--- Returns:
+--- * New instance of `Browser`.
 function Browser:new(app)
 	local o = {_app = app}
-	return prop.extend(o, Browser)
+	prop.extend(o, Browser)
+
+--- cp.apple.finalcutpro.main.Browser.UI <cp.prop: axuielement; read-only>
+--- Field
+--- The main UI element for the Browser.
+	o.UI = prop(function(self)
+		local app = self:app()
+		return Browser._findBrowser(app:secondaryWindow(), app:primaryWindow())
+	end):bind(o)
+	:monitor(app:primaryWindow().UI)
+	:monitor(app:secondaryWindow().UI)
+
+--- cp.apple.finalcutpro.main.Browser.showing <cp.prop: boolean; read-only>
+--- Field
+--- Is the Browser showing?
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil
+	end):bind(o)
+	o.isShowing = o.showing
+
+--- cp.apple.finalcutpro.main.Browser.onSecondary <cp.prop: boolean; read-only>
+--- Field
+--- Is the Browser on the Secondary Window?
+	o.onSecondary = o.UI:mutate(function(ui, self)
+		return ui and SecondaryWindow.matches(ui:window())
+	end):bind(o)
+	o.isOnSecondary = o.onSecondary
+
+--- cp.apple.finalcutpro.main.Browser <cp.prop: boolean; read-only>
+--- Field
+--- Is the Browser on the Primary Window?
+	o.onPrimary = o.UI:mutate(function(ui, self)
+		return ui and PrimaryWindow.matches(ui:window())
+	end):bind(o)
+	o.isOnPrimary = o.onPrimary
+
+	return o
 end
 
 -- TODO: Add documentation
@@ -58,15 +110,6 @@ end
 -----------------------------------------------------------------------
 
 -- TODO: Add documentation
-function Browser:UI()
-	return axutils.cache(self, "_ui", function()
-		local app = self:app()
-		return Browser._findBrowser(app:secondaryWindow(), app:primaryWindow())
-	end,
-	Browser.matches)
-end
-
--- TODO: Add documentation
 function Browser._findBrowser(...)
 	for i = 1,select("#", ...) do
 		local window = select(i, ...)
@@ -74,35 +117,12 @@ function Browser._findBrowser(...)
 			local ui = window:browserGroupUI()
 			if ui then
 				local browser = axutils.childMatching(ui, Browser.matches)
-				if browser then return browser end
+				if axutils.isValid(browser) then return browser end
 			end
 		end
 	end
 	return nil
 end
-
---- cp.apple.finalcutpro.main.Browser.isOnSecondary <cp.prop: boolean; read-only>
---- Field
---- Is the Browser on the Secondary Window?
-Browser.isOnSecondary = prop.new(function(self)
-	local ui = self:UI()
-	return ui and SecondaryWindow.matches(ui:window())
-end):bind(Browser)
-
---- cp.apple.finalcutpro.main.Browser <cp.prop: boolean; read-only>
---- Field
---- Is the Browser on the Primary Window?
-Browser.isOnPrimary = prop.new(function(self)
-	local ui = self:UI()
-	return ui and PrimaryWindow.matches(ui:window())
-end):bind(Browser)
-
---- cp.apple.finalcutpro.main.Browser <cp.prop: boolean; read-only>
---- Field
---- Is the Browser showing?
-Browser.isShowing = prop.new(function(self)
-	return self:UI() ~= nil
-end):bind(Browser)
 
 -- TODO: Add documentation
 function Browser:showOnPrimary()
@@ -114,7 +134,7 @@ function Browser:showOnPrimary()
 		menuBar:checkMenu({"Window", "Show in Secondary Display", "Browser"})
 	end
 	-- Then enable it in the primary
-	if not self:isShowing() then
+	if not self:showing() then
 		menuBar:checkMenu({"Window", "Show in Workspace", "Browser"})
 	end
 	return self
@@ -133,7 +153,7 @@ end
 
 -- TODO: Add documentation
 function Browser:hide()
-	if self:isShowing() then
+	if self:showing() then
 		-- Uncheck it from the workspace
 		self:app():menuBar():selectMenu({"Window", "Show in Workspace", "Browser"})
 	end
@@ -218,7 +238,7 @@ end
 -- TODO: Add documentation
 function Browser:saveLayout()
 	local layout = {}
-	if self:isShowing() then
+	if self:showing() then
 		layout.showing = true
 		layout.onPrimary = self:isOnPrimary()
 		layout.onSecondary = self:isOnSecondary()

@@ -51,7 +51,22 @@ end
 
 function Browser:new(parent, type)
 	local o = {_parent = parent, _type = type}
-	return prop.extend(o, Browser)
+	prop.extend(o, Browser)
+
+	o.UI = parent.mainUI:mutate(function(mainUI, self)
+		return self:showing() and axutils.childMatching(mainUI, Browser.matches)
+	end):bind(o)
+
+	o.showing = prop.new(function(self)
+		return self:toggleButton():checked()
+	end):bind(o):monitor(o.UI)
+	o.isShowing = o.showing
+
+	o.mainGroupUI = o.UI:mutate(function(ui, self)
+		return ui and axutils.childWithRole(ui, "AXSplitGroup")
+	end):bind(o)
+
+	return o
 end
 
 function Browser:parent()
@@ -65,24 +80,6 @@ end
 function Browser:type()
 	return self._type
 end
-
------------------------------------------------------------------------
---
--- BROWSER UI:
---
------------------------------------------------------------------------
-function Browser:UI()
-	if self:isShowing() then
-		return axutils.cache(self, "_ui", function()
-			return axutils.childMatching(self:parent():mainUI(), Browser.matches)
-		end,
-		Browser.matches)
-	end
-end
-
-Browser.isShowing = prop.new(function(self)
-	return self:toggleButton():isChecked()
-end):bind(Browser)
 
 function Browser:toggleButton()
 	if not self._toggleButton then
@@ -102,14 +99,14 @@ end
 function Browser:show()
 	self:app():timeline():show()
 	self:toggleButton():check()
-	just.doUntil(function() return self:isShowing() end)
+	just.doUntil(function() return self:showing() end)
 	return self
 end
 
 function Browser:hide()
-	if self:app():timeline():isShowing() then
+	if self:app():timeline():showing() then
 		self:toggleButton():uncheck()
-		just.doWhile(function() return self:isShowing() end)
+		just.doWhile(function() return self:showing() end)
 	end
 	return self
 end
@@ -121,21 +118,20 @@ end
 -----------------------------------------------------------------------------
 
 function Browser:showSidebar()
-	if not self:sidebar():isShowing() then
+	if not self:sidebar():showing() then
 		self:sidebarToggle():toggle()
 	end
 	return self
 end
 
 function Browser:hideSidebar()
-	if self:sidebar():isShowing() then
+	if self:sidebar():showing() then
 		self:sidebarToggle():toggle()
 	end
 	return self
 end
 
 function Browser:toggleSidebar()
-	local isShowing = self:sidebar():isShowing()
 	self:sidebarToggle():toggle()
 	return self
 end
@@ -325,14 +321,6 @@ end
 --
 -----------------------------------------------------------------------------
 
-function Browser:mainGroupUI()
-	return axutils.cache(self, "_mainGroup",
-	function()
-		local ui = self:UI()
-		return ui and axutils.childWithRole(ui, "AXSplitGroup")
-	end)
-end
-
 function Browser:sidebar()
 	if not self._sidebar then
 		self._sidebar = Table.new(self, function()
@@ -380,7 +368,7 @@ end
 
 function Browser:saveLayout()
 	local layout = {}
-	if self:isShowing() then
+	if self:showing() then
 		layout.showing = true
 		layout.sidebarToggle = self:sidebarToggle():saveLayout()
 		-- reveal the sidebar temporarily so we can save it

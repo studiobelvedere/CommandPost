@@ -125,7 +125,7 @@ function mod.checkScrollingTimeline()
 	--------------------------------------------------------------------------------
 	-- Make sure the Command Editor is closed:
 	--------------------------------------------------------------------------------
-	if fcp:commandEditor():isShowing() then
+	if fcp:commandEditor():showing() then
 		--log.df("Spacebar pressed while other windows are visible.")
 		return false
 	end
@@ -133,7 +133,7 @@ function mod.checkScrollingTimeline()
 	--------------------------------------------------------------------------------
 	-- Don't activate scrollbar in fullscreen mode:
 	--------------------------------------------------------------------------------
-	if fcp:fullScreenWindow():isShowing() then
+	if fcp:fullScreenWindow():showing() then
 		--log.df("Spacebar pressed in fullscreen mode whilst watching for scrolling timeline.")
 		return false
 	end
@@ -143,7 +143,7 @@ function mod.checkScrollingTimeline()
 	--------------------------------------------------------------------------------
 	-- Get Timeline Scroll Area:
 	--------------------------------------------------------------------------------
-	if not timeline:isShowing() then
+	if not timeline:showing() then
 		--log.ef("ERROR: Could not find Timeline Scroll Area.")
 		return false
 	end

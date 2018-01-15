@@ -93,14 +93,9 @@ end
 --- cp.ui.Window.UI <cp.prop: axuielement; read-only>
 --- Field
 --- Returns the `axuielement` UI for the window, or `nil` if it can't be found.
-Window.UI = prop(
-	function(self)
-		return axutils.cache(self, "_ui", function()
-			return self._finder()
-		end,
-		Window.matches)
-	end
-):bind(Window)
+Window.UI = prop(function(self)
+	return self._finder()
+end):bind(Window)
 
 --- cp.ui.Window.hsWindow <cp.prop: hs.window; read-only>
 --- Field
@@ -224,7 +219,11 @@ end
 --- * `true` if the window was successfully focused.
 function Window:focus()
 	local hsWindow = self:hsWindow()
-	return hsWindow ~= nil and hsWindow:focus()
+	if hsWindow ~= nil then
+		hsWindow:focus()
+		return hswindow.focusedWindow() == hsWindow
+	end
+	return false
 end
 
 return Window

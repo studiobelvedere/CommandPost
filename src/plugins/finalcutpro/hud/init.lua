@@ -482,7 +482,7 @@ function hud.updateVisibility()
 		--------------------------------------------------------------------------------
 		-- Don't show the HUD when in fullscreen mode or Command Editor is visible:
 		--------------------------------------------------------------------------------
-		if fcp:fullScreenWindow():isShowing() or fcp:commandEditor():isShowing() then
+		if fcp:fullScreenWindow():showing() or fcp:commandEditor():showing() then
 			--log.df("Final Cut Pro Command Editor or Full Screen Playback is visible.")
 			hud.hide()
 			return

@@ -78,7 +78,7 @@ function mod.reload()
 end
 
 function mod.onChoices(choices)
-	if not fcp:menuBar():isShowing() or not mod._choices then
+	if not fcp:menuBar():showing() or not mod._choices then
 		return true
 	end
 

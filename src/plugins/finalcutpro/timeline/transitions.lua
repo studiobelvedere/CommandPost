@@ -86,7 +86,7 @@ function mod.apply(action)
 	-- Get Transitions Browser:
 	--------------------------------------------------------------------------------
 	local transitions = fcp:transitions()
-	local transitionsShowing = transitions:isShowing()
+	local transitionsShowing = transitions:showing()
 	local transitionsLayout = transitions:saveLayout()
 
 	--------------------------------------------------------------------------------

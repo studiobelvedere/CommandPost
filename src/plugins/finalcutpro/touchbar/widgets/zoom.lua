@@ -81,7 +81,7 @@ function mod.widget()
 	widgetCanvas:canvasMouseEvents(true, true, false, true)
 		:mouseCallback(function(o,m,i,x,y)
 
-		 	if not fcp.isFrontmost() or not fcp:timeline():isShowing() then return end
+		 	if not fcp.isFrontmost() or not fcp:timeline():showing() then return end
 
 			widgetCanvas.circle.center = {
 				x = x,

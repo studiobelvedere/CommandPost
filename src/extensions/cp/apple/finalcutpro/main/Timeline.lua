@@ -47,7 +47,47 @@ end
 -- TODO: Add documentation
 function Timeline:new(app)
 	local o = {_app = app}
-	return prop.extend(o, Timeline)
+	prop.extend(o, Timeline)
+
+-- TODO: Add documentation
+	o.UI = prop(function(self)
+		local app = self:app()
+		return Timeline._findTimeline(app:secondaryWindow(), app:primaryWindow())
+	end):bind(o)
+	:monitor(app:secondaryWindow().UI)
+	:monitor(app:primaryWindow().UI)
+
+-- TODO: Add documentation
+	o.onSecondary = o.UI:mutate(function(ui, self)
+		return ui and SecondaryWindow.matches(ui:window())
+	end):bind(o)
+	o.isOnSecondary = o.onSecondary
+
+-- TODO: Add documentation
+	o.onPrimary = o.UI:mutate(function(ui, self)
+		return ui and PrimaryWindow.matches(ui:window())
+	end):bind(o)
+	o.isOnPrimary = o.onPrimary
+
+-- TODO: Add documentation
+	o.showing = o.UI:mutate(function(ui, self)
+		return ui ~= nil and #ui > 0
+	end):bind(o)
+
+-----------------------------------------------------------------------
+--
+-- MAIN UI
+-- The Canvas is the main body of the timeline, containing the
+-- Timeline Index, the canvas, and the Effects/Transitions panels.
+--
+-----------------------------------------------------------------------
+
+-- TODO: Add documentation
+	o.mainUI = o.UI:mutate(function(ui, self)
+		return ui and axutils.childMatching(ui, Timeline.matchesMain)
+	end):bind(o)
+
+	return o
 end
 
 -- TODO: Add documentation
@@ -60,15 +100,6 @@ end
 -- TIMELINE UI:
 --
 -----------------------------------------------------------------------
-
--- TODO: Add documentation
-function Timeline:UI()
-	return axutils.cache(self, "_ui", function()
-		local app = self:app()
-		return Timeline._findTimeline(app:secondaryWindow(), app:primaryWindow())
-	end,
-	Timeline.matches)
-end
 
 -- TODO: Add documentation
 function Timeline._findTimeline(...)
@@ -86,26 +117,8 @@ function Timeline._findTimeline(...)
 end
 
 -- TODO: Add documentation
-Timeline.isOnSecondary = prop.new(function(self)
-	local ui = self:UI()
-	return ui and SecondaryWindow.matches(ui:window())
-end):bind(Timeline)
-
--- TODO: Add documentation
-Timeline.isOnPrimary = prop.new(function(self)
-	local ui = self:UI()
-	return ui and PrimaryWindow.matches(ui:window())
-end):bind(Timeline)
-
--- TODO: Add documentation
-Timeline.isShowing = prop.new(function(self)
-	local ui = self:UI()
-	return ui ~= nil and #ui > 0
-end):bind(Timeline)
-
--- TODO: Add documentation
 function Timeline:show()
-	if not self:isShowing() then
+	if not self:showing() then
 		self:showOnPrimary()
 	end
 end
@@ -139,23 +152,6 @@ function Timeline:hide()
 	menuBar:uncheckMenu({"Window", "Show in Secondary Display", "Timeline"})
 	menuBar:uncheckMenu({"Window", "Show in Workspace", "Timeline"})
 	return self
-end
-
------------------------------------------------------------------------
---
--- MAIN UI
--- The Canvas is the main body of the timeline, containing the
--- Timeline Index, the canvas, and the Effects/Transitions panels.
---
------------------------------------------------------------------------
-
--- TODO: Add documentation
-function Timeline:mainUI()
-	return axutils.cache(self, "_main", function()
-		local ui = self:UI()
-		return ui and axutils.childMatching(ui, Timeline.matchesMain)
-	end,
-	Timeline.matchesMain)
 end
 
 -- TODO: Add documentation

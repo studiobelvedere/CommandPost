@@ -76,7 +76,7 @@ end
 --
 --------------------------------------------------------------------------------
 
---- cp.apple.finalcutpro.main.Inspector.VideoInspector:isShowing() -> boolean
+--- cp.apple.finalcutpro.main.Inspector.VideoInspector:showing() -> boolean
 --- Method
 --- Returns `true` if the Video Inspector is showing otherwise `false`
 ---
@@ -85,7 +85,7 @@ end
 ---
 --- Returns:
 ---  * `true` if showing, otherwise `false`
-function VideoInspector:isShowing()
+function VideoInspector:showing()
 	return self:parent():selectedTab() == "Video" or false
 end
 
@@ -117,9 +117,9 @@ end
 ---  * This method will open the Inspector if it's closed, and close it again after adjusting the stablization settings.
 function VideoInspector:stabilization(value)
 	local inspectorOriginallyClosed = false
-	if not self:isShowing() then
+	if not self:showing() then
 		self:show()
-		if not self.isShowing() then
+		if not self.showing() then
 			log.ef("Failed to open Inspector")
 			return nil
 		end

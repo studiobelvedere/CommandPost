@@ -44,7 +44,7 @@ function mod.addNoteToSelectedClip()
 	-- Make sure the Browser is visible:
 	--------------------------------------------------------------------------------
 	local libraries = fcp:browser():libraries()
-	if not libraries:isShowing() then
+	if not libraries:showing() then
 		log.df("Library Panel is closed." .. errorFunction)
 		return false
 	end
