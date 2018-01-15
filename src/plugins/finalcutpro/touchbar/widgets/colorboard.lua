@@ -223,7 +223,7 @@ end
 -- Returns:
 --  * None
 local function update()
-	if fcp:isRunning() and fcp:isFrontmost() and fcp:colorBoard():showing() then
+	if fcp:isRunning() and fcp:isFrontmost() and fcp:colorBoard():isShowing() then
 		for i, v in pairs(mod._updateCallbacks) do
 			v()
 		end
