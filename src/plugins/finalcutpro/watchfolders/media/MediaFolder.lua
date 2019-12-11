@@ -154,6 +154,7 @@ end
 ---  * None
 function MediaFolder.mt:doTagFiles(files)
     return Do(function()
+        log.df("tagging files started")
         --------------------------------------------------------------------------------
         -- Add Tags:
         --------------------------------------------------------------------------------
@@ -186,8 +187,10 @@ function MediaFolder.mt:doTagFiles(files)
                 end
             end
         end
+        log.df("tagging files ended")
     end)
     :Label("MediaFolder:doTagFiles")
+    :Debug("MediaFolder:doTagFiles")
 end
 
 local function isFile(flags)
@@ -491,6 +494,9 @@ end
 --- Returns:
 ---  * None
 function MediaFolder.mt:importAll()
+
+    log.df("** IMPORT ALL BUTTON PRESSED! **")
+
     if #self.ready > 0 then
         self:importFiles({unpack(self.ready)})
         self.ready = Queue()
@@ -559,10 +565,14 @@ end
 --- Returns:
 ---  * None
 function MediaFolder.mt:importFiles(files)
+    log.df("importFiles triggered: %s", files)
+
     self.importing:pushRight(files)
     -- we save before importing so that we can pick up again later if CP restarts.
     self:save()
-    self:doImportNext():TimeoutAfter(30000, "Import Next took too long"):Now()
+    self:doImportNext():TimeoutAfter(10000, "Import Next took too long (10sec)"):After(0)
+    log.df("importFiles finsihed")
+
 end
 
 --- plugins.finalcutpro.watchfolders.media.MediaFolder:doWriteFilesToPasteboard(files, context) -> nil
@@ -577,6 +587,9 @@ end
 ---  * A `Statement` to execute.
 function MediaFolder.mt:doWriteFilesToPasteboard(files, context)
     return Do(function()
+
+        log.df("Starting doWriteFilesToPasteboard")
+
         if files == nil or #files == 0 then
             return Throw(i18n("fcpMediaFolder_Error_NoFiles"))
         end
@@ -603,9 +616,12 @@ function MediaFolder.mt:doWriteFilesToPasteboard(files, context)
         if not result then
             return Throw(i18n("fcpMediaFolder_Error_UnableToPaste", {file = files[1], count = #files}))
         end
+
+        log.df("Ending doWriteFilesToPasteboard")
     end)
     :ThenYield()
     :Label("MediaFolder:doWriteFilesToPasteboard")
+    :Debug("doWriteFilesToPasteboard")
 end
 
 --- plugins.finalcutpro.watchfolders.media.MediaFolder:doRestoreOriginalPasteboard(context) -> nil
@@ -673,6 +689,9 @@ end
 --- Returns:
 ---  * None
 function MediaFolder.mt:doImportNext()
+
+    log.df("doImportNext triggered")
+
     local timeline = fcp:timeline()
     local context = {}
 
@@ -684,12 +703,20 @@ function MediaFolder.mt:doImportNext()
         --------------------------------------------------------------------------------
         -- Tag the files:
         --------------------------------------------------------------------------------
-        return Do(self:doTagFiles(files))
+        return Do(
+            self:doTagFiles(files)
+            :TimeoutAfter(1000, "Tagging files took too long")
+            :Debug("Tagging Files")
+        )
 
         --------------------------------------------------------------------------------
         -- Make sure Final Cut Pro is Active:
         --------------------------------------------------------------------------------
-        :Then(fcp:doLaunch())
+        :Then(
+            fcp:doShow()
+            :TimeoutAfter(1000, "FCPX took too long to show")
+            :Debug("Showing FCPX")
+        )
 
         --------------------------------------------------------------------------------
         -- Check if Timeline can be enabled:
@@ -697,17 +724,23 @@ function MediaFolder.mt:doImportNext()
         :Then(
             timeline:doShow()
             :TimeoutAfter(1000, i18n("fcpMediaFolder_Error_ShowTimeline"))
+            :Debug("Showing Timeline")
         )
 
         :Then(
             WaitUntil(timeline.isLoaded)
             :TimeoutAfter(1000, i18n("fcpMediaFolder_Error_ProjectRequired"))
+            :Debug("Waiting for Timeline to load")
         )
 
         --------------------------------------------------------------------------------
         -- Put the media onto the pasteboard:
         --------------------------------------------------------------------------------
-        :Then(self:doWriteFilesToPasteboard(files, context))
+        :Then(
+            self:doWriteFilesToPasteboard(files, context)
+            :TimeoutAfter(1000, "Writing files to pasteboard took too long")
+            :Debug("Writing files to pasteboard")
+        )
 
         --------------------------------------------------------------------------------
         -- Perform Paste:
@@ -717,7 +750,11 @@ function MediaFolder.mt:doImportNext()
         --     fcp:doSelectMenu({"Edit", "Paste as Connected Clip"})
         --     :TimeoutAfter(10000, "Timed out while pasting.")
         -- )
-        :Then(fcp:doShortcut("PasteAsConnected"))
+        :Then(
+            fcp:doShortcut("PasteAsConnected")
+            :TimeoutAfter(1000, "Paste shortcut took too long")
+            :Debug("Triggering paste shortcut")
+        )
 
         --------------------------------------------------------------------------------
         -- Remove from Timeline if appropriate:
@@ -725,27 +762,41 @@ function MediaFolder.mt:doImportNext()
         :Then(
             If(self.mod.insertIntoTimeline):Is(false):Then(
                 fcp:doShortcut("UndoChanges")
+                :TimeoutAfter(1000, "Undo took too long")
+                :Debug("Triggering undo shortcut")
             )
         )
 
         --------------------------------------------------------------------------------
         -- Restore original Pasteboard Content:
         --------------------------------------------------------------------------------
-        :Then(self:doRestoreOriginalPasteboard(context))
+        :Then(
+            self:doRestoreOriginalPasteboard(context)
+            :TimeoutAfter(1000, "Restoring original pasteboard took too long")
+            :Debug("Restore original pasteboard")
+        )
 
         --------------------------------------------------------------------------------
         -- Delete the imported files (if configured):
         --------------------------------------------------------------------------------
-        :Then(self:doDeleteImportedFiles(files))
+        :Then(
+            self:doDeleteImportedFiles(files)
+            :TimeoutAfter(1000, "Deleting imported files took too long")
+            :Debug("Delete Imported Files")
+        )
 
         --------------------------------------------------------------------------------
         -- Try importing the next set of files in the queue:
         --------------------------------------------------------------------------------
         :Then(function()
+            log.df("Trying next item in the queue...")
             self.importingNow = false
-            return self:doImportNext()
+            return self:doImportNext():TimeoutAfter(10000, "Import Next took too long (10sec)")
         end)
+        :Debug("Try next item in the queue")
+
         :Catch(function(message)
+            log.df("Catch triggered")
             self.importingNow = false
             log.ef("Error during `doImportNext`: %s", message)
             dialog.displayMessage(message)
@@ -753,10 +804,12 @@ function MediaFolder.mt:doImportNext()
         end)
     end)
     :Otherwise(function()
+        log.df("Otherwise triggered")
         self.importingNow = false
         self:updateReadyNotification()
     end)
     :Label("MediaFolder:doImportNext")
+    :Debug("MediaFolder:doImportNext")
 end
 
 --- plugins.finalcutpro.watchfolders.media.MediaFolder:save()

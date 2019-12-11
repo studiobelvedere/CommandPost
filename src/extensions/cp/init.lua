@@ -26,6 +26,9 @@ local i18n                  = require "cp.i18n"
 local plugins               = require "cp.plugins"
 local tools                 = require "cp.tools"
 
+print("Setting window timeout to 1sec:")
+window.timeout(1)
+
 --------------------------------------------------------------------------------
 -- Not used in `init.lua`, but is required to "jump start" the CLI support:
 --------------------------------------------------------------------------------

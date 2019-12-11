@@ -606,7 +606,7 @@ end
 
 -- the debug printing function
 local function printDebug(ui, notification, details)
-    log.df("notification: %s; ui: %s; details: %s", notification, ui, inspect(details))
+    --log.df("notification: %s; ui: %s; details: %s", notification, ui, inspect(details))
 end
 
 --- cp.ui.notifier:debugging([enabled]) -> boolean

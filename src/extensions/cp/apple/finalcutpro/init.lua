@@ -1233,6 +1233,7 @@ function fcp.lazy.prop:activeCommandSet()
     end)
     :cached()
     :monitor(self.activeCommandSetPath)
+    :label("cp.apple.finalcutpro.activeCommandSet")
 end
 
 --- cp.apple.finalcutpro.getCommandShortcuts(id) -> table of hs.commands.shortcut
@@ -1279,9 +1280,13 @@ end
 --- Returns:
 ---  * A `Statement` that will perform the shortcut when executed.
 function fcp:doShortcut(whichShortcut)
-    return Do(self:doLaunch())
-    :Then(function()
+    --return Do(self:doLaunch())
+
+    --:Then(function()
+    return Do(function()
+        log.df("whichShortcut: %s", whichShortcut)
         local shortcuts = self:getCommandShortcuts(whichShortcut)
+        log.df("shortcuts: %s", hs.inspect(shortcuts))
         if shortcuts and #shortcuts > 0 then
             shortcuts[1]:trigger()
             return true
@@ -1289,8 +1294,9 @@ function fcp:doShortcut(whichShortcut)
             return Throw(i18n("fcpShortcut_NoShortcutAssigned", {id=whichShortcut}))
         end
     end)
-    :ThenYield()
+    --:ThenYield()
     :Label("fcp:doShortcut:"..whichShortcut)
+    :Debug("doShortcut Triggered")
 end
 
 ----------------------------------------------------------------------------------------

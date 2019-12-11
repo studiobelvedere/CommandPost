@@ -250,7 +250,11 @@ end
 ---  * `self`
 function shortcut.mt:trigger()
     local keyCode = shortcut.textToKeyCode(self:getKeyCode())
+    log.df("--------------")
+    log.df("about to trigger: %s %s", keyCode, hs.inspect(self._modifiers))
     eventtap.keyStroke(self._modifiers, keyCode, 0)
+    log.df("eventtap complete")
+    log.df("--------------")
     return self
 end
 

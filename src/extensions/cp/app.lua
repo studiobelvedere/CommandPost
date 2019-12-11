@@ -124,6 +124,10 @@ local frontmostApp = nil
 --- Returns the most recent 'registered' app that was active, other than CommandPost itself.
 app.static.frontmostApp = prop(function() return frontmostApp end):label("frontmostApp")
 
+local deferred = require "cp.deferred"
+
+local notifyTimers = {}
+
 -- notifyWatch(cpProp, notifications) -> cp.prop
 -- Function
 -- Utility function to help set up watchers. Adds a watch for the specified notifications
@@ -139,7 +143,16 @@ local function notifyWatch(cpProp, notifications)
     cpProp:preWatch(function(self)
         self:notifier():watchFor(
             notifications,
-            function() cpProp:update() end
+            function()
+                local id = cpProp:id()
+                if not notifyTimers[id] then
+                    notifyTimers[id] = deferred.new(0.1):action(function()
+                        log.df("updating prop because of notification: %s: %s", cpProp:id(), cpProp)
+                        cpProp:update()
+                    end)
+                end
+                notifyTimers[id]()
+            end
         )
     end)
     return cpProp
@@ -1023,7 +1036,9 @@ end
 --- Returns:
 ---  * The notifier.
 function app.lazy.method:notifier()
-    return notifier.new(self:bundleID(), function() return self:UI() end):start()
+    local n = notifier.new(self:bundleID(), function() return self:UI() end):start()
+    n:debugging(true)
+    return n
 end
 
 --- cp.app.description -> string
@@ -1200,6 +1215,7 @@ local function updateFrontmostApp(cpApp)
     else
         frontmostApp = nil
     end
+    log.df("FRONTMOST APP IS: %s", frontmostApp)
     app.frontmostApp:update()
 end
 
@@ -1222,24 +1238,36 @@ function app.static._initWatchers()
     --------------------------------------------------------------------------------
     app._appWatcher = applicationwatcher.new(
         function(appName, eventType, hsApp)
+
+            log.df("---------------------------------------------")
+            log.df("APPLICATON WATCHER:")
+            log.df("appName: %s", appName)
+            log.df("eventType: %s", eventType)
+            log.df("hsApp: %s", hsApp)
+            log.df("isUnresponsive: %s", hsApp:isUnresponsive())
+            log.df("---------------------------------------------")
+
             local cpApp = app._findApp(hsApp:bundleID(), appName)
 
             if cpApp then
                 if eventType == applicationwatcher.activated then
-                    doAfter(0.01, function()
+                    doAfter(0, function()
+                        log.df("* ACTIVATED: %s", appName)
                         cpApp.showing:update()
                         cpApp.frontmost:update()
                         updateFrontmostApp(cpApp)
                     end)
                     return
                 elseif eventType == applicationwatcher.deactivated then
-                    doAfter(0.01, function()
+                    doAfter(0, function()
+                        log.df("* DEACTIVATED: %s", appName)
                         cpApp.showing:update()
                         cpApp.frontmost:update()
                     end)
                     return
                 elseif eventType == applicationwatcher.launched then
-                    doAfter(0.01, function()
+                    doAfter(0, function()
+                        log.df("* LAUNCHED: %s", appName)
                         cpApp.hsApplication:update()
                         cpApp.running:update()
                         cpApp.frontmost:update()
@@ -1247,7 +1275,8 @@ function app.static._initWatchers()
                     end)
                     return
                 elseif eventType == applicationwatcher.terminated then
-                    doAfter(0.01, function()
+                    doAfter(0, function()
+                        log.df("* TERMINATED: %s", appName)
                         cpApp.hsApplication:update()
                         cpApp.running:update()
                         cpApp.frontmost:update()

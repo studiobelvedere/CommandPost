@@ -1231,6 +1231,7 @@ local function _notifyWatchers(watchers, value, owner, theProp)
         for _,watcher in ipairs(watchers) do
             if watcher.lastValue ~= value then
                 watcher.lastValue = value
+                --log.df("prop notified: %s %s %s", value, owner, theProp)
                 local ok, result = xpcall(function() watcher.fn(value, owner, theProp) end, debug.traceback)
                 if not ok then
                     log.ef("Error while notifying a watcher: %s", result)
@@ -1279,11 +1280,24 @@ function prop.mt:_notify(value)
         self._notifying = nil
         -- check if a 'set' happened during the notification cycle.
         if self._doSet then
+            log.df("-------------")
+            log.df("set happened during the notification cycle")
+            log.df("id: %s", self._id)
+            log.df("label: %s", self._label)
+            log.df("value: %s", value)
+            log.df("new value: %s", self._newValue)
+            log.df("-------------")
             self._doSet = nil
             self._doUpdate = nil
             self:set(self._newValue)
             self._newValue = nil
         elseif self._doUpdate then
+            log.df("-------------")
+            log.df("update happened during the notification cycle")
+            log.df("id: %s", self._id)
+            log.df("label: %s", self._label)
+            log.df("value: %s", value)
+            log.df("-------------")
             self._doUpdate = nil
             self:update()
         end
