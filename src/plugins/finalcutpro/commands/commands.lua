@@ -5,6 +5,8 @@
 
 local require       = require
 
+local log           = require "hs.logger".new "commands"
+
 local commands      = require "cp.commands"
 local fcp           = require "cp.apple.finalcutpro"
 
@@ -26,6 +28,7 @@ function plugin.init()
     --------------------------------------------------------------------------------
     mod.cmds:watch({
         activate    = function()
+            log.df("plugins.finalcutpro.commands wants to launch FCPX")
             fcp:launch()
         end,
     })
@@ -34,6 +37,7 @@ function plugin.init()
     -- Enable/Disable as Final Cut Pro becomes Active/Inactive:
     --------------------------------------------------------------------------------
     mod.isEnabled = fcp.isFrontmost:AND(fcp.isModalDialogOpen:NOT()):watch(function(enabled)
+        log.df("plugins.finalcutpro.commands is enabled.")
         mod.cmds:isEnabled(enabled)
     end):label("fcpxCommandsIsEnabled")
 
