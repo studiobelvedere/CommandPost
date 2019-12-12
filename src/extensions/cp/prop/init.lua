@@ -1078,6 +1078,16 @@ function prop.mt:IS(something)
     local left = self
 
     -- create the property
+    log.df("========================================")
+    log.df("IS PROP:")
+    log.df("")
+    log.df("left: %s", left)
+    log.df("something: %s", something)
+    log.df("")
+    log.df("left dump: %s", string.dump(left))
+    log.df("something dump: %s", string.dump(something))
+    log.df("========================================")
+
     local result = prop.new(function()
         return evaluate(left) == evaluate(something)
     end)
@@ -1112,6 +1122,7 @@ function prop.mt:ISNOT(something)
     local left = self
 
     -- create the property
+    log.df("ISNOT PROP:")
     local result = prop.new(function()
         return evaluate(left) ~= evaluate(something)
     end)
@@ -1146,6 +1157,7 @@ function prop.mt:BELOW(something)
     local left = self
 
     -- create the property
+    log.df("BELOW PROP:")
     local result = prop.new(function()
         return evaluate(left) < evaluate(something)
     end)
@@ -1169,6 +1181,7 @@ function prop.mt:ABOVE(something)
     local left = self
 
     -- create the property
+    log.df("ABOVE PROP:")
     local result = prop.new(function()
         return evaluate(left) > evaluate(something)
     end)
@@ -1192,6 +1205,7 @@ function prop.mt:ATMOST(something)
     local left = self
 
     -- create the property
+    log.df("ATMOST PROP:")
     local result = prop.new(function()
         return evaluate(left) <= evaluate(something)
     end)
@@ -1215,6 +1229,7 @@ function prop.mt:ATLEAST(something)
     local left = self
 
     -- create the property
+    log.df("ATLEAST PROP:")
     local result = prop.new(function()
         return evaluate(left) >= evaluate(something)
     end)
@@ -1231,7 +1246,7 @@ local function _notifyWatchers(watchers, value, owner, theProp)
         for _,watcher in ipairs(watchers) do
             if watcher.lastValue ~= value then
                 watcher.lastValue = value
-                --log.df("prop notified: %s %s %s", value, owner, theProp)
+                log.df("prop notified: %s %s %s", value, owner, theProp)
                 local ok, result = xpcall(function() watcher.fn(value, owner, theProp) end, debug.traceback)
                 if not ok then
                     log.ef("Error while notifying a watcher: %s", result)
@@ -1350,6 +1365,21 @@ function prop.new(getFn, setFn, cloneFn)
         _set        = setFn,
         _clone      = cloneFn,
     }
+
+    log.df("--------------------------------")
+    log.df("NEW PROP:")
+    log.df("ID: %s", o._id)
+    if getFn then
+        log.df("getFn: %s", string.dump(getFn))
+    end
+    if setFn then
+        log.df("setFn: %s", string.dump(setFn))
+    end
+    if cloneFn then
+        log.df("cloneFn: %s", string.dump(cloneFn))
+    end
+    log.df("--------------------------------")
+
     return setmetatable(o, prop.mt)
 end
 
@@ -1370,6 +1400,7 @@ function prop.THIS(initialValue)
         clone._value = self._value
         return clone
     end
+    log.df("THIS PROP:")
     local result = prop.new(get, set, clone)
     result._value = initialValue
     return result
@@ -1388,6 +1419,7 @@ end
 --- Note:
 ---  * The original `propValue` can still be modified (if appropriate) and watchers of the immutable value will be notified when it changes.
 function prop.IMMUTABLE(propValue)
+    log.df("IMMUTABLE PROP:")
     local immutable = prop.new(function() return propValue:get() end):monitor(propValue)
     return immutable
 end
@@ -1401,6 +1433,7 @@ end
 ---
 --- Returns:
 ---  * a new `cp.prop` instance with a value of `nil`.
+log.df("NIL PROP:")
 prop.NIL = prop.new(function() return nil end)
 
 --- cp.prop:IMMUTABLE() -- cp.prop
@@ -1451,6 +1484,7 @@ function prop.TABLE(initialValue)
         clone._value = self._value
         return clone
     end
+    log.df("TABLE PROP:")
     local result = prop.new(get, set, clone)
     result._value = initialValue
     return result
@@ -1474,6 +1508,7 @@ end
 ---  * If the `propValue` is mutable, you can set the `NOT` property value and the underlying value will be set to the negated value. Be aware that the same negation rules apply when setting as when getting.
 function prop.NOT(propValue)
     if not prop.is(propValue) then error "Expected a `cp.prop` at argument #1" end
+    log.df("NOT PROP:")
     local notProp = prop.new(
         function() return negate(propValue:get()) end,
         function(newValue) return propValue:set(negate(newValue)) end
@@ -1538,6 +1573,7 @@ end
 ---   * `true and (false or true)`: `prop.TRUE():AND( prop.FALSE():OR(prop.TRUE()) )`
 function prop.AND(...)
     local props = table.pack(...)
+    log.df("AND PROP:")
     local andProp = prop.new(
         function()
             local value = false
@@ -1593,6 +1629,7 @@ prop.mt.AND = prop.AND
 ---   * `true or (false and true)`: `prop.TRUE():OR( prop.FALSE():AND(prop.TRUE()) )`
 function prop.OR(...)
     local props = table.pack(...)
+    log.df("OR PROP:")
     local orProp = prop.new(
         function()
             local value = false

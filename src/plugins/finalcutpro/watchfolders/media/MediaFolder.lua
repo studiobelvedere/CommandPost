@@ -612,7 +612,11 @@ function MediaFolder.mt:doWriteFilesToPasteboard(files, context)
         for _, v in pairs(files) do
             objects[#objects + 1] = { url = "file://" .. http.encodeForQuery(v) }
         end
+
+        log.df("pasteboard objects: %s", hs.inspect(objects))
+
         local result = pasteboard.writeObjects(objects)
+
         if not result then
             return Throw(i18n("fcpMediaFolder_Error_UnableToPaste", {file = files[1], count = #files}))
         end
@@ -703,24 +707,53 @@ function MediaFolder.mt:doImportNext()
         --------------------------------------------------------------------------------
         -- Tag the files:
         --------------------------------------------------------------------------------
+        --[[
         return Do(
             self:doTagFiles(files)
             :TimeoutAfter(1000, "Tagging files took too long")
             :Debug("Tagging Files")
         )
+        --]]
+
+        --------------------------------------------------------------------------------
+        -- Put the media onto the pasteboard:
+        --------------------------------------------------------------------------------
+        return Do(function() print("let the games being") end)
 
         --------------------------------------------------------------------------------
         -- Make sure Final Cut Pro is Active:
         --------------------------------------------------------------------------------
         :Then(
-            fcp:doShow()
-            :TimeoutAfter(1000, "FCPX took too long to show")
+            --fcp:doShow()
+            function()
+                log.df("BEFORE LAUNCH")
+                --fcp:show()
+
+                if not cp.just.doUntil(function()
+                    fcp:launch()
+                    return fcp:isFrontmost()
+                end, 5, 0.1) then
+                    displayErrorMessage("Failed to switch back to Final Cut Pro.")
+                    return false
+                end
+
+
+
+                log.df("AFTER LAUNCH")
+            end)
+            --:TimeoutAfter(5000, "FCPX took too long to show")
             :Debug("Showing FCPX")
+
+        :Then(
+            self:doWriteFilesToPasteboard(files, context)
+            :TimeoutAfter(1000, "Writing files to pasteboard took too long")
+            :Debug("Writing files to pasteboard")
         )
 
         --------------------------------------------------------------------------------
         -- Check if Timeline can be enabled:
         --------------------------------------------------------------------------------
+        --[[
         :Then(
             timeline:doShow()
             :TimeoutAfter(1000, i18n("fcpMediaFolder_Error_ShowTimeline"))
@@ -732,15 +765,7 @@ function MediaFolder.mt:doImportNext()
             :TimeoutAfter(1000, i18n("fcpMediaFolder_Error_ProjectRequired"))
             :Debug("Waiting for Timeline to load")
         )
-
-        --------------------------------------------------------------------------------
-        -- Put the media onto the pasteboard:
-        --------------------------------------------------------------------------------
-        :Then(
-            self:doWriteFilesToPasteboard(files, context)
-            :TimeoutAfter(1000, "Writing files to pasteboard took too long")
-            :Debug("Writing files to pasteboard")
-        )
+        --]]
 
         --------------------------------------------------------------------------------
         -- Perform Paste:

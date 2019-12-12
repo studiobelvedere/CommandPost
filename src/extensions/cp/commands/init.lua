@@ -104,7 +104,7 @@ function commands.new(id)
 --- Field
 --- If enabled, the commands in the group will be active as well.
         isEnabled = prop.TRUE():watch(function(enabled, self)
-            --log.df("%s.isEnabled: %s", self:id(), enabled)
+            log.df("%s.isEnabled: %s", self:id(), enabled)
             if enabled then
                 self:_notify('enable')
             else

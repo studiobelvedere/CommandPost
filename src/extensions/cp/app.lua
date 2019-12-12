@@ -838,6 +838,7 @@ function app:doLaunch(waitSeconds, path)
             end)
             :Otherwise(
                 If(self.hsApplication):Then(function(hsApp)
+                    log.df("ACTIVATING LINE 841: %s", hsApp)
                     hsApp:activate()
                     return true
                 end)
@@ -962,6 +963,7 @@ function app:show()
             hsApp:unhide()
         end
         if hsApp:isRunning() then
+            log.df("ACTIVATING LINE #966: %s", hsApp)
             hsApp:activate()
         end
     end
@@ -983,6 +985,7 @@ function app.lazy.method:doShow()
             hsApp:unhide()
         end
         if hsApp:isRunning() then
+            log.df("ACTIVATING LINE #988: %s", hsApp)
             hsApp:activate()
         end
         return WaitUntil(self.frontmost)
@@ -1219,6 +1222,26 @@ local function updateFrontmostApp(cpApp)
     app.frontmostApp:update()
 end
 
+local function eventTypeToString(a)
+    if a == applicationwatcher.activated then
+        return "activated"
+    elseif a == applicationwatcher.deactivated then
+        return "deactivated"
+    elseif a == applicationwatcher.launched then
+        return "launched"
+    elseif a == applicationwatcher.terminated then
+        return "terminated"
+    elseif a == applicationwatcher.hidden then
+        return "hidden"
+    elseif a == applicationwatcher.launching then
+        return "launching"
+    elseif a == applicationwatcher.unhidden then
+        return "unhidden"
+    else
+        return "unknown: '".. a .. "'"
+    end
+end
+
 -- cp.app._initWatchers() -> none
 -- Method
 -- Initialise all the various application watchers.
@@ -1242,7 +1265,7 @@ function app.static._initWatchers()
             log.df("---------------------------------------------")
             log.df("APPLICATON WATCHER:")
             log.df("appName: %s", appName)
-            log.df("eventType: %s", eventType)
+            log.df("eventType: %s - %s", eventType, eventTypeToString(eventType))
             log.df("hsApp: %s", hsApp)
             log.df("isUnresponsive: %s", hsApp:isUnresponsive())
             log.df("---------------------------------------------")
@@ -1251,40 +1274,41 @@ function app.static._initWatchers()
 
             if cpApp then
                 if eventType == applicationwatcher.activated then
-                    doAfter(0, function()
+                    --doAfter(0, function()
                         log.df("* ACTIVATED: %s", appName)
                         cpApp.showing:update()
                         cpApp.frontmost:update()
                         updateFrontmostApp(cpApp)
-                    end)
+                    --end)
                     return
                 elseif eventType == applicationwatcher.deactivated then
-                    doAfter(0, function()
+                    --doAfter(0, function()
                         log.df("* DEACTIVATED: %s", appName)
                         cpApp.showing:update()
                         cpApp.frontmost:update()
-                    end)
+                    --end)
                     return
                 elseif eventType == applicationwatcher.launched then
-                    doAfter(0, function()
+                    --doAfter(0, function()
                         log.df("* LAUNCHED: %s", appName)
                         cpApp.hsApplication:update()
                         cpApp.running:update()
                         cpApp.frontmost:update()
                         updateFrontmostApp(cpApp)
-                    end)
+                    --end)
                     return
                 elseif eventType == applicationwatcher.terminated then
-                    doAfter(0, function()
+                    --doAfter(0, function()
                         log.df("* TERMINATED: %s", appName)
                         cpApp.hsApplication:update()
                         cpApp.running:update()
                         cpApp.frontmost:update()
                         updateFrontmostApp(cpApp)
-                    end)
+                    --end)
                     return
                 end
             elseif hsApp:bundleID() ~= COMMANDPOST_BUNDLE_ID then
+                log.df("updateFrontmostApp triggered")
                 updateFrontmostApp(nil)
             end
         end

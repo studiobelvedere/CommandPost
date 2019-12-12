@@ -4,7 +4,7 @@
 
 local require = require
 
---local log				        = require "hs.logger".new "ignorecard"
+local log				        = require "hs.logger".new "ignorecard"
 
 local application               = require "hs.application"
 local fs                        = require "hs.fs"
@@ -38,6 +38,9 @@ function mod.start()
                 mod._fcpxHidden = not fcp:isShowing()
                 mod._currentApplication = application.frontmostApplication()
                 mod.mediaImportTimer = doEvery(0.01, function()
+
+                    log.df("mediaImportTimer trigger")
+
                     local mediaImport = fcp:mediaImport()
                     if mediaImport:isShowing() then
                         --------------------------------------------------------------------------------

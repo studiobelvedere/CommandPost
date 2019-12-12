@@ -436,9 +436,14 @@ function mod.startWatching()
     -- Watch for Pasteboard Changes:
     --------------------------------------------------------------------------------
     mod._timer = timer.new(mod.WATCHER_FREQUENCY, function()
+
+        log.df("checking pasteboard")
+
         if not mod._watchers then
             return
         end
+
+        log.df("REALLY checking pasteboard")
 
         local currentChange = pasteboard.changeCount()
 

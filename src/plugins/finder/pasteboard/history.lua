@@ -4,7 +4,7 @@
 
 local require           = require
 
---local log               = require "hs.logger".new "pbHistory"
+local log               = require "hs.logger".new "pbHistory"
 
 local eventtap          = require "hs.eventtap"
 local pasteboard        = require "hs.pasteboard"
@@ -56,6 +56,10 @@ local plugin = {
 }
 
 function plugin.init(deps)
+
+    log.df("IGNORING plugins.finder.pasteboard.history")
+    do return end
+
 
     --------------------------------------------------------------------------------
     -- Restore history from JSON:
